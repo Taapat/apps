@@ -1,5 +1,5 @@
 /*
- * Ufs922.c
+ * Ufs912.c
  * 
  * (c) 2009 dagobert@teamducktales
  *
@@ -31,7 +31,7 @@
 #include <sys/ioctl.h>
 
 #include "global.h"
-#include "Ufs922.h"
+#include "Ufs912.h"
 
 static int setText(Context_t* context, char* theText);
 
@@ -40,7 +40,7 @@ static int setText(Context_t* context, char* theText);
 #define cVFD_DEVICE "/dev/vfd"
 #define cRC_DEVICE "/dev/rc"
 
-#define cMAXCharsUFS922 16
+#define cMAXCharsUFS912 16
 
 typedef struct
 {
@@ -50,7 +50,7 @@ typedef struct
     
     time_t wakeupTime;
     int    wakeupDecrement;
-} tUFS922Private;
+} tUFS912Private;
 
 /* ******************* helper/misc functions ****************** */
 
@@ -72,7 +72,7 @@ static void setMode(int fd)
  * julian date). mjd is relativ to gmt so theGMTTime
  * must be in GMT/UTC.
  */
-void setMicomTime(time_t theGMTTime, char* destString)
+static void setMicomTime(time_t theGMTTime, char* destString)
 {
 	/* from u-boot micom */
 	struct tm* now_tm;
@@ -91,7 +91,7 @@ void setMicomTime(time_t theGMTTime, char* destString)
 	destString[4] = now_tm->tm_sec;
 }
 
-unsigned long getMicomTime(char* micomTimeString)
+static unsigned long getMicomTime(char* micomTimeString)
 {
 	unsigned int 	mjd 	= ((micomTimeString[1] & 0xFF) * 256) + (micomTimeString[2] & 0xFF);
 	unsigned long 	epoch 	= ((mjd - 40587)*86400);
@@ -112,7 +112,7 @@ unsigned long getMicomTime(char* micomTimeString)
 
 static int init(Context_t* context)
 {
-    tUFS922Private* private = malloc(sizeof(tUFS922Private));
+    tUFS912Private* private = malloc(sizeof(tUFS912Private));
     int vFd;
 
     printf("%s\n", __func__);
@@ -126,7 +126,7 @@ static int init(Context_t* context)
     }
     
     ((Model_t*)context->m)->private = private;
-    memset(private, 0, sizeof(tUFS922Private));
+    memset(private, 0, sizeof(tUFS912Private));
 
     checkConfig(&private->display, &private->display_custom, &private->timeFormat, &private->wakeupDecrement);
 
@@ -189,7 +189,7 @@ static int setTimer(Context_t* context)
    time_t                  curTime;
    time_t                  wakeupTime;
    struct tm               *ts;
-   tUFS922Private* private = (tUFS922Private*) 
+   tUFS912Private* private = (tUFS912Private*) 
         ((Model_t*)context->m)->private;
 
    time(&curTime);
@@ -388,8 +388,8 @@ static int Sleep(Context_t* context, time_t* wakeUpGMT)
    struct     timeval tv;
    int        retval;
    struct tm  *ts;
-   char       output[cMAXCharsUFS922 + 1];
-   tUFS922Private* private = (tUFS922Private*) 
+   char       output[cMAXCharsUFS912 + 1];
+   tUFS912Private* private = (tUFS912Private*) 
         ((Model_t*)context->m)->private;
 
    printf("%s\n", __func__);
@@ -431,7 +431,7 @@ static int Sleep(Context_t* context, time_t* wakeUpGMT)
 
       if (private->display)
       {
-         strftime(output, cMAXCharsUFS922 + 1, private->timeFormat, ts);
+         strftime(output, cMAXCharsUFS912 + 1, private->timeFormat, ts);
          setText(context, output);
       } 
    }
@@ -442,8 +442,8 @@ static int setText(Context_t* context, char* theText)
 {
    char vHelp[128];
    
-   strncpy(vHelp, theText, cMAXCharsUFS922);
-   vHelp[cMAXCharsUFS922] = '\0';
+   strncpy(vHelp, theText, cMAXCharsUFS912);
+   vHelp[cMAXCharsUFS912] = '\0';
  
    /* printf("%s, %d\n", vHelp, strlen(vHelp));*/
  
@@ -495,10 +495,9 @@ static int setBrightness(Context_t* context, int brightness)
 
    vData.u.brightness.level = brightness;
    
-   printf("%d\n", context->fd);
-
    setMode(context->fd);
-
+   
+   printf("%d\n", context->fd);
    if (ioctl(context->fd, VFDBRIGHTNESS, &vData) < 0)
    {
       perror("setbrightness: ");
@@ -526,7 +525,7 @@ static int getWakeupReason(Context_t* context, int* reason)
 
 static int Exit(Context_t* context)
 {
-   tUFS922Private* private = (tUFS922Private*) 
+   tUFS912Private* private = (tUFS912Private*) 
         ((Model_t*)context->m)->private;
 
     if (context->fd > 0)
@@ -539,23 +538,39 @@ static int Exit(Context_t* context)
 
 static int Clear(Context_t* context)
 {
-   int i;
-   
-   setText(context, "                ");
+   struct micom_ioctl_data vData;
 
-   setBrightness(context, 7);
-   
-   for (i = 1; i <= 6 ; i++)
-      setLed(context, i, 0);
-
-   for (i = 1; i <= 16 ; i++)
-      setIcon(context, i, 0);
- 
+   if (ioctl(context->fd, VFDDISPLAYWRITEONOFF, &vData) < 0)
+   {
+      perror("Clear: ");
+      return -1;
+   }
+   return 0;
 }
 
-Model_t UFS922_model = {
-	"Kathrein UFS922 frontpanel control utility",
-	Ufs922,
+static int setLedBrightness(Context_t* context, int brightness)
+{
+   struct micom_ioctl_data vData;
+
+   if (brightness < 0 || brightness > 0xff)
+      return -1;
+
+   vData.u.brightness.level = brightness;
+   
+   setMode(context->fd);
+   
+   printf("%d\n", context->fd);
+   if (ioctl(context->fd, VFDLEDBRIGHTNESS, &vData) < 0)
+   {
+      perror("setledbrightness: ");
+      return -1;
+   }
+   return 0;   
+}
+
+Model_t UFS912_model = {
+	"Kathrein UFS912 frontpanel control utility",
+	Ufs912,
         init,
         Clear,
 	usage,
@@ -574,6 +589,6 @@ Model_t UFS922_model = {
 	getWakeupReason,
 	setLight,
         Exit,
+	setLedBrightness,
 	NULL,
-        NULL,
 };
