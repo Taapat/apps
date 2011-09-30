@@ -1,7 +1,7 @@
-#ifndef __spark__
-#define __spark__
+#ifndef __adb_box__
+#define __adb_box__
 
-#define VFDICONDISPLAYONOFF		0xc0425a0a
+#define VFDICONDISPLAYONOFF		0xc0425a0a 
 
 /* this setups the mode temporarily (for one ioctl)
  * to the desired mode. currently the "normal" mode
@@ -39,7 +39,7 @@ struct set_time_s {
 	char time[5];
 };
 
-struct aotom_ioctl_data {
+struct adb_box_ioctl_data {
 	union
 	{
 		struct set_icon_s icon;
@@ -50,5 +50,6 @@ struct aotom_ioctl_data {
 		struct set_time_s time;
 	} u;
 };
+
 
 #endif
