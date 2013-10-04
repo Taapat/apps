@@ -39,6 +39,26 @@ void usage(char* name)
     exit(1);
 }
 
+ssize_t write_all(int fd, const void *buf, size_t count)
+{
+    int retval;
+    char *ptr = (char*)buf;
+    size_t handledcount = 0;
+    while (handledcount < count)
+    {
+        retval = write(fd, &ptr[handledcount], count - handledcount);
+
+        if (retval == 0) return -1;
+        if (retval < 0)
+        {
+            if (errno == EINTR) continue;
+            return retval;
+        }
+        handledcount += retval;
+    }
+    return handledcount;
+}
+
 int showiframe(char * path, bool progress) {
 
     int m_video_clip_fd;
@@ -79,12 +99,12 @@ int showiframe(char * path, bool progress) {
                     ++pos;
 
             if ((iframe[3] >> 4) != 0xE) // no pes header
-                write(m_video_clip_fd, pes_header, sizeof(pes_header));
+                write_all(m_video_clip_fd, pes_header, sizeof(pes_header));
 
             write(m_video_clip_fd, iframe, s.st_size);
             if (!seq_end_avail)
-                write(m_video_clip_fd, seq_end, sizeof(seq_end));
-            write(m_video_clip_fd, stuffing, 8192);
+                write_all(m_video_clip_fd, seq_end, sizeof(seq_end));
+            write_all(m_video_clip_fd, stuffing, 8192);
             
             bool end = false;
             char progress_ch [4];
