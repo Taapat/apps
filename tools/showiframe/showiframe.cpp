@@ -99,9 +99,13 @@ int showiframe(char * path, bool progress) {
                     ++pos;
 
             if ((iframe[3] >> 4) != 0xE) // no pes header
+            {
                 write_all(m_video_clip_fd, pes_header, sizeof(pes_header));
-
-            write(m_video_clip_fd, iframe, s.st_size);
+            }
+            else {
+                iframe[4] = iframe[5] = 0x00;
+            }
+            write_all(m_video_clip_fd, iframe, s.st_size);
             if (!seq_end_avail)
                 write_all(m_video_clip_fd, seq_end, sizeof(seq_end));
             write_all(m_video_clip_fd, stuffing, 8192);
