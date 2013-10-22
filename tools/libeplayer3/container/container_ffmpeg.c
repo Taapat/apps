@@ -53,9 +53,9 @@
 /* ***************************** */
 
 //for buffered io
-#define FILLBUFSIZE 0
-#define FILLBUFDIFF 1048576
-#define FILLBUFPAKET 5120
+#define FILLBUFSIZE 0 
+#define FILLBUFDIFF (1024*1024)
+#define FILLBUFPAKET (1024*4) 
 #define FILLBUFSEEKTIME 3 //sec
 
 static int ffmpeg_buf_size = FILLBUFSIZE + FILLBUFDIFF;
@@ -1148,7 +1148,7 @@ int ffmpeg_read(void *opaque, uint8_t *buf, int buf_size)
         len = ffmpeg_read_real(opaque, buf, buf_size - sumlen);
         sumlen += len;
         buf += len;
-        if(len == 0)
+        if(len == 0 && sumlen < FILLBUFPAKET)
             usleep(10000);
     }
 
@@ -2358,7 +2358,7 @@ static int Command(void  *_context, ContainerCmd_t command, void * argument)
     return ret;
 }
 
-static char *FFMPEG_Capabilities[] = {"avi", "mkv", "mp4", "ts", "mov", "flv", "flac", "mp3", "mpg", "m2ts", "vob", "wmv","wma", "asf", "mp2", "m4v", "m4a", "divx", "dat", "mpeg", "trp", "mts", "vdr", "ogg", "wav", NULL };
+static char *FFMPEG_Capabilities[] = {"avi", "mkv", "mp4", "ts", "mov", "flv", "flac", "mp3", "mpg", "m2ts", "vob", "wmv","wma", "asf", "mp2", "m4v", "m4a", "divx", "dat", "mpeg", "trp", "mts", "vdr", "ogg", "wav", "m3u8", NULL };
 
 Container_t FFMPEGContainer = {
     "FFMPEG",
