@@ -1146,10 +1146,15 @@ int ffmpeg_read(void *opaque, uint8_t *buf, int buf_size)
     while(sumlen < buf_size && (--count) > 0)
     {
         len = ffmpeg_read_real(opaque, buf, buf_size - sumlen);
+        if(len <= 0 )
+        {
+            if (len < 0 || sumlen >= FILLBUFPAKET)) break;
+            usleep(10000);
+            continue;
+        }
+        
         sumlen += len;
         buf += len;
-        if(len == 0 && sumlen < FILLBUFPAKET)
-            usleep(10000);
     }
 
     if(count == 0)
