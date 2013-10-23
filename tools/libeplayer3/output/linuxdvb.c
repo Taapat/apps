@@ -209,7 +209,7 @@ int LinuxDvbClose(Context_t  *context, char * type) {
 
 int LinuxDvbPlay(Context_t  *context, char * type) {
     int ret = cERR_LINUXDVB_NO_ERROR;
-    Writer_t* writer;
+    Writer_t* writer = NULL;
 
     unsigned char video = !strcmp("video", type);
     unsigned char audio = !strcmp("audio", type);
@@ -280,7 +280,7 @@ int LinuxDvbPlay(Context_t  *context, char * type) {
             }
         }
 
-        if (ioctl(audiofd, AUDIO_PLAY, NULL) == -1)
+        if (ioctl(audiofd, AUDIO_PLAY) == -1)
         {
             linuxdvb_err("ioctl failed with errno %d\n", errno);
             linuxdvb_err("AUDIO_PLAY: %s\n", strerror(errno));
@@ -953,8 +953,6 @@ static int Write(void  *_context, void* _out)
     AudioVideoOut_t    *out      = (AudioVideoOut_t*) _out;
     int                ret       = cERR_LINUXDVB_NO_ERROR;
     int                res       = 0;
-    unsigned char      video     = 0;
-    unsigned char      audio     = 0;
     Writer_t*          writer;
     WriterAVCallData_t call;
 
@@ -964,14 +962,11 @@ static int Write(void  *_context, void* _out)
        return cERR_LINUXDVB_ERROR;
     }
     
-    video = !strcmp("video", out->type);
-    audio = !strcmp("audio", out->type);
-  
     linuxdvb_printf(20, "DataLength=%u PrivateLength=%u Pts=%llu FrameRate=%f\n", 
                                                     out->len, out->extralen, out->pts, out->frameRate);
-    linuxdvb_printf(20, "v%d a%d\n", video, audio);
+    linuxdvb_printf(20, "type: %d [0 - audio, 1- video]\n", out->type);
 
-    if (video) {
+    if (OUTPUT_TYPE_VIDEO == out->type) {
         char * Encoding = NULL;
         context->manager->video->Command(context, MANAGER_GETENCODING, &Encoding);
 
@@ -1015,7 +1010,7 @@ static int Write(void  *_context, void* _out)
         }
 
         free(Encoding);
-    } else if (audio) {
+    } else if (OUTPUT_TYPE_AUDIO == out->type) {
         char * Encoding = NULL;
         context->manager->audio->Command(context, MANAGER_GETENCODING, &Encoding);
 

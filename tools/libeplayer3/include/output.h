@@ -32,6 +32,11 @@ typedef enum {
     OUTPUT_SET_SUBTITLE_OUTPUT
 } OutputCmd_t;
 
+typedef enum {
+    OUTPUT_TYPE_AUDIO,
+    OUTPUT_TYPE_VIDEO
+} OutputType_t;
+
 typedef struct
 {
      unsigned char*         data;
@@ -48,7 +53,7 @@ typedef struct
      unsigned int           width;
      unsigned int           height;
      
-     char*                  type;
+     OutputType_t           type;
 } AudioVideoOut_t;
 
 typedef struct Output_s {

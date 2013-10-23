@@ -566,7 +566,7 @@ if(!context->playback->BackWard && audioMute)
                     avOut.timeScale  = videoTrack->TimeScale;
                     avOut.width      = videoTrack->width;
                     avOut.height     = videoTrack->height;
-                    avOut.type       = "video";
+                    avOut.type       = OUTPUT_TYPE_VIDEO;
 
                     if (context->output->video->Write(context, &avOut) < 0) {
                         ffmpeg_err("writing data to video device failed\n");
@@ -608,7 +608,7 @@ if(!context->playback->BackWard && audioMute)
                         avOut.timeScale  = 0;
                         avOut.width      = 0;
                         avOut.height     = 0;
-                        avOut.type       = "audio";
+                        avOut.type       = OUTPUT_TYPE_AUDIO;
 
 #ifdef reverse_playback_3
                         if (!context->playback->BackWard)
@@ -662,7 +662,7 @@ if(!context->playback->BackWard && audioMute)
                             avOut.timeScale  = 0;
                             avOut.width      = 0;
                             avOut.height     = 0;
-                            avOut.type       = "audio";
+                            avOut.type       = OUTPUT_TYPE_AUDIO;
 
 #ifdef reverse_playback_3
                             if (!context->playback->BackWard)
@@ -684,7 +684,7 @@ if(!context->playback->BackWard && audioMute)
                         avOut.timeScale  = 0;
                         avOut.width      = 0;
                         avOut.height     = 0;
-                        avOut.type       = "audio";
+                        avOut.type       = OUTPUT_TYPE_AUDIO;
 
 #ifdef reverse_playback_3
                         if (!context->playback->BackWard)
@@ -706,7 +706,7 @@ if(!context->playback->BackWard && audioMute)
                         avOut.timeScale  = 0;
                         avOut.width      = 0;
                         avOut.height     = 0;
-                        avOut.type       = "audio";
+                        avOut.type       = OUTPUT_TYPE_AUDIO;
 
 #ifdef reverse_playback_3
                         if (!context->playback->BackWard)
@@ -1148,7 +1148,7 @@ int ffmpeg_read(void *opaque, uint8_t *buf, int buf_size)
         len = ffmpeg_read_real(opaque, buf, buf_size - sumlen);
         if(len <= 0 )
         {
-            if (len < 0 || sumlen >= FILLBUFPAKET)) break;
+            if (len < 0 || sumlen >= FILLBUFPAKET) break;
             usleep(10000);
             continue;
         }
