@@ -351,8 +351,6 @@ static int Write(void  *_context __attribute__((unused)), void* _out)
     AudioVideoOut_t    *out      = (AudioVideoOut_t*) _out;
     int                ret       = cERR_PIPE_NO_ERROR;
     int                res       = 0;
-    unsigned char      dvbsubtitle;
-    unsigned char      teletext;
 
     if (out == NULL)
     {
@@ -360,21 +358,18 @@ static int Write(void  *_context __attribute__((unused)), void* _out)
        return cERR_PIPE_ERROR;
     }
     
-    dvbsubtitle = !strcmp("dvbsubtitle", out->type);
-    teletext = !strcmp("teletext", out->type);
-  
     pipe_printf(20, "DataLength=%u PrivateLength=%u Pts=%llu FrameRate=%f\n", 
                                                     out->len, out->extralen, out->pts, out->frameRate);
-    pipe_printf(20, "v%d a%d\n", dvbsubtitle, teletext);
+    pipe_printf(20, "type: %d [2 - dvbsubtitle, 3- teletext]\n", out->type);
 
-    if (dvbsubtitle) {
+    if (OUTPUT_TYPE_DVBSUBTITLE == out->type) {
 	res = writePESDataDvbsubtitle(dvbsubtitlefd, out->data, out->len, out->pts);
 
         if (res <= 0)
         {
             ret = cERR_PIPE_ERROR;
         }
-    } else if (teletext) {
+    } else if (OUTPUT_TYPE_TELETEXT == out->type) {
 	res = writePESDataTeletext(teletextfd, out->data, out->len);
 
         if (res <= 0)

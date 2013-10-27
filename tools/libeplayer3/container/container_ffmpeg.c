@@ -535,7 +535,7 @@ static void FFMPEGThread(Context_t *context) {
 		    avOut.timeScale  = videoTrack->TimeScale;
 		    avOut.width      = videoTrack->width;
 		    avOut.height     = videoTrack->height;
-		    avOut.type       = "video";
+		    avOut.type       = OUTPUT_TYPE_VIDEO;
 
 		    if (context->output->video->Write(context, &avOut) < 0) {
 			ffmpeg_err("writing data to video device failed\n");
@@ -565,7 +565,7 @@ static void FFMPEGThread(Context_t *context) {
                         avOut.timeScale  = 0;
                         avOut.width      = 0;
                         avOut.height     = 0;
-                        avOut.type       = "audio";
+                        avOut.type       = OUTPUT_TYPE_AUDIO;
 
                         if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
                         {
@@ -686,7 +686,7 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.timeScale  = 0;
 				avOut.width      = 0;
 				avOut.height     = 0;
-				avOut.type       = "audio";
+				avOut.type       = OUTPUT_TYPE_AUDIO;
 
 				if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
 					ffmpeg_err("writing data to audio device failed\n");
@@ -706,7 +706,7 @@ static void FFMPEGThread(Context_t *context) {
 			avOut.timeScale  = 0;
 			avOut.width      = 0;
 			avOut.height     = 0;
-			avOut.type       = "audio";
+			avOut.type       = OUTPUT_TYPE_AUDIO;
 
 			if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
 			{
@@ -724,7 +724,7 @@ static void FFMPEGThread(Context_t *context) {
 			avOut.timeScale  = 0;
 			avOut.width      = 0;
 			avOut.height     = 0;
-			avOut.type       = "audio";
+			avOut.type       = OUTPUT_TYPE_AUDIO;
 
 			if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
 			{
@@ -847,7 +847,7 @@ static void FFMPEGThread(Context_t *context) {
 		    avOut.timeScale  = 0;
 		    avOut.width      = 0;
 		    avOut.height     = 0;
-		    avOut.type       = "dvbsubtitle";
+		    avOut.type       = OUTPUT_TYPE_DVBSUBTITLE;
 
 		    if (context->output->dvbsubtitle->Write(context, &avOut) < 0)
 		    {
@@ -867,7 +867,7 @@ static void FFMPEGThread(Context_t *context) {
 		    avOut.timeScale  = 0;
 		    avOut.width      = 0;
 		    avOut.height     = 0;
-		    avOut.type       = "teletext";
+		    avOut.type       = OUTPUT_TYPE_TELETEXT;
 
 		    if (context->output->teletext->Write(context, &avOut) < 0)
 		    {
