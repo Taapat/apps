@@ -92,7 +92,7 @@ int InsertPesHeader (unsigned char *data, int size, unsigned char stream_id, uns
 
     if (size > MAX_PES_PACKET_SIZE)
     {
-        printf("%s: Packet size %d bigger than %dK eeeekkkkk\n",__FUNCTION__, size, int(MAX_PES_PACKET_SIZE/1024));
+        printf("%s: Packet size %d bigger than %dK eeeekkkkk\n",__FUNCTION__, size, (int)(MAX_PES_PACKET_SIZE/1024));
         size = 0; // unbounded
     }
 
