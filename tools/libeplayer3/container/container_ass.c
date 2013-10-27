@@ -117,8 +117,8 @@ static unsigned char isContainerRunning = 0;
 static ASS_Library *ass_library;
 static ASS_Renderer *ass_renderer;
 
-static float ass_font_scale = 1.0;
-static float ass_line_spacing = 1.0;
+static float ass_font_scale = 0.7;
+static float ass_line_spacing = 0.7;
 
 static unsigned int screen_width     = 0;
 static unsigned int screen_height    = 0;
@@ -379,7 +379,7 @@ static void ASSThread(Context_t *context) {
             //FIXME: durch den sleep bleibt die cpu usage zw. 5 und 13%, ohne
             //       steigt sie bei Verwendung von subtiteln bis auf 95%.
             //       ich hoffe dadurch gehen keine subtitle verloren, wenn die playPts
-            //       durch den sleep verschlafen wird. Besser wäre es den nächsten
+            //       durch den sleep verschlafen wird. Besser w\E4re es den n\E4chsten
             //       subtitel zeitpunkt zu bestimmen und solange zu schlafen.
             usleep(1000);
 
