@@ -34,15 +34,16 @@
 #include <sys/uio.h>
 #include <linux/dvb/video.h>
 #include <linux/dvb/audio.h>
+#include <linux/dvb/stm_ioctls.h>
 #include <memory.h>
 #include <asm/types.h>
 #include <pthread.h>
 #include <errno.h>
+#include <sys/uio.h>
 
 #include "common.h"
 #include "output.h"
 #include "debug.h"
-#include "stm_ioctls.h"
 #include "misc.h"
 #include "pes.h"
 #include "writer.h"
@@ -55,15 +56,16 @@
 #ifdef H263_DEBUG
 
 static short debug_level = 0;
+static const char *FILENAME = "h263.c";
 
 #define h263_printf(level, fmt, x...) do { \
-if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+if (debug_level >= level) printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define h263_printf(level, fmt, x...)
 #endif
 
 #ifndef H263_SILENT
-#define h263_err(fmt, x...) do { printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+#define h263_err(fmt, x...) do { printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define h263_err(fmt, x...)
 #endif
@@ -129,16 +131,13 @@ static int writeData(void* _call)
 
     HeaderLength                           += PrivateHeaderLength;
 
-    int iovcnt = 0;
     struct iovec iov[2];
-    iov[iovcnt].iov_base = PesHeader;
-    iov[iovcnt].iov_len  = HeaderLength;
-    iovcnt++;
-    iov[iovcnt].iov_base = call->data;
-    iov[iovcnt].iov_len  = call->len;
-    iovcnt++;
+    iov[0].iov_base = PesHeader;
+    iov[0].iov_len = HeaderLength;
+    iov[1].iov_base = call->data;
+    iov[1].iov_len = call->len;
+    int len = writev(call->fd, iov, 2);
 
-    int len = writev(call->fd, iov, iovcnt);
     h263_printf(10, "< len %d\n", len);
     return len;
 }
