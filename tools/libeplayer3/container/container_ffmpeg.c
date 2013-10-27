@@ -1331,7 +1331,7 @@ int container_ffmpeg_init(Context_t *context, char * filename)
         return cERR_CONTAINER_FFMPEG_OPEN;
     }
 
-    avContext->flags = AVFMT_FLAG_GENPTS;
+    avContext->flags |= AVFMT_FLAG_GENPTS;
 
     if (context->playback->noprobe)
 	  avContext->max_analyze_duration = 1;
