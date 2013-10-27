@@ -1342,7 +1342,6 @@ int container_ffmpeg_init(Context_t *context, char * filename)
 
     if (isContainerRunning) {
         ffmpeg_err("ups already running?\n");
-        releaseMutex(FILENAME, __FUNCTION__,__LINE__);
         return cERR_CONTAINER_FFMPEG_RUNNING;
     }
 
@@ -1372,7 +1371,6 @@ int container_ffmpeg_init(Context_t *context, char * filename)
             //for buffered io
             ffmpeg_buf_free();
             //for buffered io (end)
-            releaseMutex(FILENAME, __FUNCTION__,__LINE__);
             return cERR_CONTAINER_FFMPEG_OPEN;
         }
     }
@@ -1390,7 +1388,6 @@ int container_ffmpeg_init(Context_t *context, char * filename)
             //for buffered io
             ffmpeg_buf_free();
             //for buffered io (end)
-            releaseMutex(FILENAME, __FUNCTION__,__LINE__);
             return cERR_CONTAINER_FFMPEG_OPEN;
         }
     }
@@ -1414,7 +1411,6 @@ int container_ffmpeg_init(Context_t *context, char * filename)
         //for buffered io
         ffmpeg_buf_free();
         //for buffered io (end)
-        releaseMutex(FILENAME, __FUNCTION__,__LINE__);
         return cERR_CONTAINER_FFMPEG_STREAM;
 #endif
     }
