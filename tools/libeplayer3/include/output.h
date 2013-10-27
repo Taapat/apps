@@ -32,11 +32,6 @@ typedef enum {
     OUTPUT_SET_SUBTITLE_OUTPUT
 } OutputCmd_t;
 
-typedef enum {
-    OUTPUT_TYPE_AUDIO,
-    OUTPUT_TYPE_VIDEO
-} OutputType_t;
-
 typedef struct
 {
      unsigned char*         data;
@@ -53,7 +48,7 @@ typedef struct
      unsigned int           width;
      unsigned int           height;
      
-     OutputType_t           type;
+     char*                  type;
 } AudioVideoOut_t;
 
 typedef struct Output_s {
@@ -66,6 +61,7 @@ typedef struct Output_s {
 
 extern Output_t LinuxDvbOutput;
 extern Output_t SubtitleOutput;
+extern Output_t PipeOutput;
 
 static Output_t * AvailableOutput[] = {
     &LinuxDvbOutput,
@@ -78,6 +74,8 @@ typedef struct OutputHandler_s {
     Output_t * audio;
     Output_t * video;
     Output_t * subtitle;
+    Output_t * dvbsubtitle;
+    Output_t * teletext;
     int (* Command) (/*Context_t*/void  *, OutputCmd_t, void *);
 } OutputHandler_t;
 

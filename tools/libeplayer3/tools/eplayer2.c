@@ -121,6 +121,10 @@ void framebuffer_init()
 }
 
 
+void blitFunction(){
+	printf("I should BLIT now\n");
+}
+
 int main(int argc,char* argv[]) {
     SubtitleOutputDef_t out;
     int showInfos = 0, noinput = 0;
@@ -141,15 +145,15 @@ int main(int argc,char* argv[]) {
     }
     else
     {
-    	n = snprintf(file, sizeof(file), "%s", argv[1]);
+      n = snprintf(file, sizeof(file), "%s", argv[1]);
     }
-    
+
     if (n >= sizeof(file))
     {
         printf("URL must not exceed %d characters!\n", sizeof(file) - 1);
         exit(1);
     }
-   
+
     /* debug helper */
     if(argc == 3 && !strcmp(argv[2], "-d"))
     {
@@ -182,6 +186,7 @@ int main(int argc,char* argv[]) {
     out.destination   = lfb;
     out.destStride    = stride;
     out.shareFramebuffer = 1;
+    out.framebufferBlit = blitFunction;
 
     player->output->subtitle->Command(player, (OutputCmd_t)OUTPUT_SET_SUBTITLE_OUTPUT, (void*) &out);
 
