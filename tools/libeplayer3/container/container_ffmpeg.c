@@ -63,7 +63,7 @@
 #define FILLBUFSEEKTIME 3 //sec
 
 static int ffmpeg_buf_size = FILLBUFSIZE + FILLBUFDIFF;
-static ffmpeg_buf_seek_time = FILLBUFSEEKTIME;
+static int ffmpeg_buf_seek_time = FILLBUFSEEKTIME;
 static int(*ffmpeg_read_org)(void *opaque, uint8_t *buf, int buf_size) = NULL;
 static int64_t(*ffmpeg_seek_org)(void *opaque, int64_t offset, int whence) = NULL;
 static unsigned char* ffmpeg_buf_read = NULL;
@@ -146,13 +146,14 @@ static int container_ffmpeg_seek_bytes(off_t pos);
 //static int container_ffmpeg_seek(Context_t *context, float sec);
 static int container_ffmpeg_seek(Context_t *context, float sec, int absolute);
 static int container_ffmpeg_seek_rel(Context_t *context, off_t pos, long long int pts, float sec);
-static int container_ffmpeg_seek_bytes_rel(off_t start, off_t bytes);
+//static int container_ffmpeg_seek_bytes_rel(off_t start, off_t bytes);
 
 /* ***************************** */
 /* MISC Functions                */
 /* ***************************** */
 
-static int mutexInitialized = 0;
+volatile static int mutexInitialized = 0;
+volatile static int fillerMutexInitialized = 0;
 
 static void initMutex(void)
 {
@@ -177,10 +178,17 @@ static void releaseMutex(const char *filename __attribute__((unused)), const con
     ffmpeg_printf(100, "::%d released mutex\n", line);
 }
 
+static void initFillerMutex(void)
+{
+    pthread_mutex_init(&mutex, NULL);
+    fillerMutexInitialized = 1;
+}
 //for buffered io
 void getfillerMutex(const char *filename, const char *function, int line) {
     ffmpeg_printf(100, "::%d requesting mutex\n", line);
 
+    if (!fillerMutexInitialized)
+        initFillerMutex();
     pthread_mutex_lock(&fillermutex);
 
     ffmpeg_printf(100, "::%d received mutex\n", line);
@@ -1318,7 +1326,7 @@ static int interrupt_cb(void *ctx)
 }
 
 
-int container_ffmpeg_init(Context_t *context, char * filename)
+static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 {
     int err;
 
@@ -1449,6 +1457,15 @@ int container_ffmpeg_init(Context_t *context, char * filename)
     isContainerRunning = 1;
     int res = container_ffmpeg_update_tracks(context, filename, 1);
     return res;
+}
+
+static int container_ffmpeg_init(Context_t *context, char * filename)
+{
+    int ret = -1; 
+    getMutex(FILENAME, __FUNCTION__,__LINE__);
+    ret = container_ffmpeg_init_unsafe(context, filename);
+    releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+    return ret;
 }
 
 int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initial)
