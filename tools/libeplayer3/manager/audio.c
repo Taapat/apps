@@ -214,9 +214,10 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     }
     case MANAGER_GETENCODING: {
         if ((TrackCount > 0) && (CurrentTrack >=0))
-            *((char**)argument) = (char *)strdup(Tracks[CurrentTrack].Encoding);
+            // track encoding points to a static string, so no need to strdup()
+            *((char**)argument) = (char *)Tracks[CurrentTrack].Encoding;
         else
-            *((char**)argument) = (char *)strdup("");
+            *((char**)argument) = NULL ;
         break;
     }
     case MANAGER_GETNAME: {

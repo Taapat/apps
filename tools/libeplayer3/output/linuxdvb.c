@@ -222,7 +222,8 @@ int LinuxDvbPlay(Context_t  *context, char * type) {
 
         linuxdvb_printf(10, "V %s\n", Encoding);
 
-        writer = getWriter(Encoding);
+        if (Encoding != NULL)
+            writer = getWriter(Encoding);
 
         if (writer == NULL)
         {
@@ -250,7 +251,6 @@ int LinuxDvbPlay(Context_t  *context, char * type) {
             linuxdvb_err("VIDEO_PLAY: %s\n", strerror(errno));
             ret = cERR_LINUXDVB_ERROR;
         }
-        free(Encoding);
     }
     if (audio && audiofd != -1) {
         char * Encoding = NULL;
@@ -258,7 +258,8 @@ int LinuxDvbPlay(Context_t  *context, char * type) {
 
         linuxdvb_printf(20, "0 A %s\n", Encoding);
 
-        writer = getWriter(Encoding);
+        if (Encoding != NULL)
+            writer = getWriter(Encoding);
 
         if (writer == NULL)
         {
@@ -286,7 +287,6 @@ int LinuxDvbPlay(Context_t  *context, char * type) {
             linuxdvb_err("AUDIO_PLAY: %s\n", strerror(errno));
             ret = cERR_LINUXDVB_ERROR;
         }
-        free(Encoding);
     }
 
     return ret;
@@ -753,7 +753,7 @@ int LinuxDvbGetFrameCount(Context_t  *context __attribute__((unused)), unsigned 
 int LinuxDvbSwitch(Context_t  *context, char * type) {
     unsigned char audio = !strcmp("audio", type);
     unsigned char video = !strcmp("video", type);
-    Writer_t* writer;
+    Writer_t* writer=NULL;
 
     linuxdvb_printf(10, "v%d a%d\n", video, audio);
 
@@ -767,7 +767,8 @@ int LinuxDvbSwitch(Context_t  *context, char * type) {
 
                 linuxdvb_printf(10, "A %s\n", Encoding);
 
-                writer = getWriter(Encoding);
+                if (Encoding != NULL)
+                    writer = getWriter(Encoding);
 
                 if (ioctl(audiofd, AUDIO_STOP ,NULL) == -1)
                 {
@@ -806,7 +807,6 @@ int LinuxDvbSwitch(Context_t  *context, char * type) {
                     linuxdvb_err("ioctl failed with errno %d\n", errno);
                     linuxdvb_err("AUDIO_PLAY: %s\n", strerror(errno));
                 }
-                free(Encoding);
             }
             else
                 linuxdvb_printf(20, "no context for Audio\n");
@@ -831,7 +831,8 @@ int LinuxDvbSwitch(Context_t  *context, char * type) {
 
                 linuxdvb_printf(10, "V %s\n", Encoding);
 
-                writer = getWriter(Encoding);
+                if (Encoding != NULL)
+                    writer = getWriter(Encoding);
 
                 if (writer == NULL)
                 {
@@ -859,7 +860,6 @@ int LinuxDvbSwitch(Context_t  *context, char * type) {
                     linuxdvb_err("ioctl failed with errno %d\n", errno);
                     linuxdvb_err("VIDEO_PLAY: %s\n", strerror(errno));
                 }
-                free(Encoding);
             }
             else
                 linuxdvb_printf(20, "no context for Video\n");
@@ -874,13 +874,18 @@ int LinuxDvbSwitch(Context_t  *context, char * type) {
     return cERR_LINUXDVB_NO_ERROR;
 }
 
+
+static char* videoEncoding = NULL;
+static char* audioEncoding = NULL;
+static Writer_t* videoWriter = NULL;
+static Writer_t* audioWriter = NULL;
+
 static int Write(void  *_context, void* _out)
 {
     Context_t          *context  = (Context_t  *) _context;
     AudioVideoOut_t    *out      = (AudioVideoOut_t*) _out;
     int                ret       = cERR_LINUXDVB_NO_ERROR;
     int                res       = 0;
-    Writer_t*          writer;
     WriterAVCallData_t call;
 
     if (out == NULL)
@@ -899,15 +904,19 @@ static int Write(void  *_context, void* _out)
 
         linuxdvb_printf(20, "Encoding = %s\n", Encoding);
 
-        writer = getWriter(Encoding);
-
-        if (writer == NULL)
+        if (videoEncoding != Encoding)
         {
-            linuxdvb_printf(20, "searching default writer ... %s\n", Encoding);
-            writer = getDefaultVideoWriter();
+            videoEncoding = Encoding;
+            videoWriter = getWriter(Encoding);
         }
 
-        if (writer == NULL)
+        if (videoWriter == NULL)
+        {
+            linuxdvb_printf(20, "searching default writer ... %s\n", Encoding);
+            videoWriter = getDefaultVideoWriter();
+        }
+
+        if (videoWriter == NULL)
         {
             linuxdvb_err("unknown video codec and no default writer %s\n",Encoding);
             ret = cERR_LINUXDVB_ERROR;
@@ -925,8 +934,8 @@ static int Write(void  *_context, void* _out)
             call.Height       = out->height;
             call.Version      = 0; // is unsingned char
 
-            if (writer->writeData)
-                res = writer->writeData(&call);
+            if (videoWriter->writeData)
+                res = videoWriter->writeData(&call);
 
             if (res < 0)
             {
@@ -936,22 +945,25 @@ static int Write(void  *_context, void* _out)
             }
         }
 
-        free(Encoding);
     } else if (OUTPUT_TYPE_AUDIO == out->type) {
         char * Encoding = NULL;
         context->manager->audio->Command(context, MANAGER_GETENCODING, &Encoding);
 
         linuxdvb_printf(20, "%s::%s Encoding = %s\n", FILENAME, __FUNCTION__, Encoding);
 
-        writer = getWriter(Encoding);
-
-        if (writer == NULL)
+        if (audioEncoding != Encoding)
         {
-            linuxdvb_printf(20, "searching default writer ... %s\n", Encoding);
-            writer = getDefaultAudioWriter();
+            audioEncoding = Encoding;
+            audioWriter = getWriter(Encoding);
         }
 
-        if (writer == NULL)
+        if (audioWriter == NULL)
+        {
+            linuxdvb_printf(20, "searching default writer ... %s\n", Encoding);
+            audioWriter = getDefaultAudioWriter();
+        }
+
+        if (audioWriter == NULL)
         {
             linuxdvb_err("unknown audio codec %s and no default writer\n",Encoding);
             ret = cERR_LINUXDVB_ERROR;
@@ -967,8 +979,8 @@ static int Write(void  *_context, void* _out)
             call.FrameScale     = out->timeScale;
             call.Version        = 0; /* -1; unsigned char cannot be negative */
 
-            if (writer->writeData)
-                res = writer->writeData(&call);
+            if (audioWriter->writeData)
+                res = audioWriter->writeData(&call);
 
             if (res < 0)
             {
@@ -977,8 +989,6 @@ static int Write(void  *_context, void* _out)
                 ret = cERR_LINUXDVB_ERROR;
             }
         }
-
-        free(Encoding);
     }
 
     return ret;
@@ -987,12 +997,13 @@ static int Write(void  *_context, void* _out)
 static int reset(Context_t  *context)
 {
     int ret = cERR_LINUXDVB_NO_ERROR;
-    Writer_t*   writer;
+    Writer_t*   writer = NULL;
     char * Encoding = NULL;
 
     context->manager->video->Command(context, MANAGER_GETENCODING, &Encoding);
 
-    writer = getWriter(Encoding);
+    if (Encoding != NULL)
+        writer = getWriter(Encoding);
 
     if (writer == NULL)
     {
@@ -1003,11 +1014,11 @@ static int reset(Context_t  *context)
         writer->reset();
     }
 
-    free(Encoding);
-
+    Encoding = NULL;
     context->manager->audio->Command(context, MANAGER_GETENCODING, &Encoding);
 
-    writer = getWriter(Encoding);
+    if (Encoding != NULL)
+        writer = getWriter(Encoding);
 
     if (writer == NULL)
     {
@@ -1017,8 +1028,6 @@ static int reset(Context_t  *context)
     {
         writer->reset();
     }
-
-    free(Encoding);
 
     return ret;
 }
