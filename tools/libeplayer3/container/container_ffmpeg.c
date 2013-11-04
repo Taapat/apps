@@ -886,6 +886,8 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 
 	if(strstr(filename, "http://") == filename)
 	{
+		avContext->max_analyze_duration = 100000;
+		avContext->flags |= AVIO_FLAG_NONBLOCK;
 		AVDictionary *avio_opts = NULL;
 		av_dict_set(&avio_opts, "timeout", "20000", 0); //20sec
 		if ((err = avformat_open_input(&avContext, filename, NULL, &avio_opts)) != 0)
