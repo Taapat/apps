@@ -1139,7 +1139,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					track.Encoding       = encoding;
 					track.stream         = stream;
-					track.Id		 = ((AVStream *) (track.stream))->id;
+					track.Id             = stream->id;
 					track.duration       = (double)stream->duration * av_q2d(stream->time_base) * 1000.0;
 
 					track.aacbuf         = 0;
