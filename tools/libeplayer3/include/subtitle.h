@@ -117,14 +117,12 @@ typedef struct
 
 typedef struct
 {
-    unsigned char* destination;
+    uint32_t	   *destination;
     unsigned int   screen_width;
     unsigned int   screen_height;
     unsigned int   destStride;
     
-    void           (*framebufferBlit)();
-    int            shareFramebuffer;
-    int            framebufferFD;
+    void	   (*framebufferBlit)(void);
 } SubtitleOutputDef_t;
 
 #endif

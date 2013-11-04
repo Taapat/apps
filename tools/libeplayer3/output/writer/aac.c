@@ -31,7 +31,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <sys/uio.h>
 #include <linux/dvb/video.h>
 #include <linux/dvb/audio.h>
 #include <linux/dvb/stm_ioctls.h>
@@ -258,8 +257,6 @@ static int writeData(void* _call)
 
     unsigned int  HeaderLength = InsertPesHeader (PesHeader, PacketLength, AAC_AUDIO_PES_START_CODE, call->Pts, 0);
 
-    aac_printf(100, "H %d d %d ExtraData %d\n", HeaderLength, call->len, sizeof(ExtraData));
-    
     struct iovec iov[3];
     iov[0].iov_base = PesHeader;
     iov[0].iov_len = HeaderLength;

@@ -29,17 +29,18 @@
 
 #define PLAYBACK_DEBUG
 
-static short debug_level = 10;
+static short debug_level = 0;
 
+static const char *FILENAME = "playback.c";
 #ifdef PLAYBACK_DEBUG
 #define playback_printf(level, fmt, x...) do { \
-if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+if (debug_level >= level) printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define playback_printf(level, fmt, x...)
 #endif
 
 #ifndef PLAYBACK_SILENT
-#define playback_err(fmt, x...) do { printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+#define playback_err(fmt, x...) do { printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define playback_err(fmt, x...)
 #endif
@@ -115,7 +116,9 @@ status = 1;
 
              while (!dieNow)
              {
-                 if (context && context->playback && context->playback->isPlaying)
+                 if (context && context->playback && context->playback->abortRequested)
+			dieNow = 1;
+                 else if (context && context->playback && context->playback->isPlaying)
                  {
                      int ret = context->playback->Command(context, PLAYBACK_PTS, &playPts);
 
@@ -211,7 +214,7 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
                 // mms is in reality called rtsp, and ffmpeg expects this
                 char * tUri = (char*)malloc(strlen(uri) + 2);
                 strncpy(tUri+1, uri, strlen(uri)+1);
-                strncpy(tUri, "rtsp", 4);
+                strncpy(tUri, "mmst", 4);
                 free(context->playback->uri);
                 context->playback->uri = tUri;
             }
@@ -792,14 +795,14 @@ static int PlaybackSwitchDVBSubtitle(Context_t  *context, int* pid) {
     playback_printf(10, "Track: %d\n", *pid);
 
     if (context && context->manager && context->manager->dvbsubtitle ) {
-        if (context->manager->dvbsubtitle->Command(context, *pid == 0xffff ? MANAGER_DEL : MANAGER_SET, pid) < 0) {
+        if (context->manager->dvbsubtitle->Command(context, *pid < 0 ? MANAGER_DEL : MANAGER_SET, pid) < 0) {
                 playback_err("dvbsub manager set track failed\n");
          	ret = cERR_PLAYBACK_ERROR;
         }
     } else
         playback_err("no dvbsubtitle\n");
 
-    if (*pid == 0xffff)
+    if (*pid < 0)
 	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
 
     playback_printf(10, "exiting with value %d\n", ret);
@@ -813,14 +816,14 @@ static int PlaybackSwitchTeletext(Context_t  *context, int* pid) {
     playback_printf(10, "Track: %d\n", *pid);
 
     if (context && context->manager && context->manager->teletext ) {
-        if (context->manager->teletext->Command(context, *pid == 0xffff ? MANAGER_DEL : MANAGER_SET, pid)) {
+        if (context->manager->teletext->Command(context, *pid < 0 ? MANAGER_DEL : MANAGER_SET, pid)) {
                 playback_err("ttxsub manager set track failed\n");
          	ret = cERR_PLAYBACK_ERROR;
 	}
     } else
         playback_err("no ttxsubtitle\n");
 
-    if (*pid == 0xffff)
+    if (*pid < 0)
 	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
 
     playback_printf(10, "exiting with value %d\n", ret);

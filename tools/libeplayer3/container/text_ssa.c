@@ -50,13 +50,13 @@
 static short debug_level = 10;
 
 #define ssa_printf(level, fmt, x...) do { \
-if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+if (debug_level >= level) printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define ssa_printf(level, fmt, x...)
 #endif
 
 #ifndef SSA_SILENT
-#define ssa_err(fmt, x...) do { printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); } while (0)
+#define ssa_err(fmt, x...) do { printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
 #else
 #define ssa_err(fmt, x...)
 #endif
@@ -68,10 +68,10 @@ if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); 
 #define TRACKWRAP 20
 #define MAXLINELENGTH 1000
 
+static const char FILENAME[] = "text_ssa.c";
+
 //Buffer size used in getLine function. Do not set to value less than 1 !!!
 #define SSA_BUFFER_SIZE 14
-
-static const char FILENAME[] = __FILE__;
 
 /* ***************************** */
 /* Types                         */

@@ -176,6 +176,7 @@ static int ManagerDel(Context_t * context) {
 static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     Context_t  *context = (Context_t*) _context;
     int ret = cERR_VIDEO_MGR_NO_ERROR;
+    int i;
 
     video_mgr_printf(10, "%s::%s\n", FILENAME, __FUNCTION__);
 
@@ -224,9 +225,13 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     case MANAGER_SET: {
         int id = (int) argument;
 
-        if (id < TrackCount)
-            CurrentTrack = id;
-        else
+	for (i = 0; i < TrackCount; i++)
+		if (Tracks[i].Id == *((int*)argument)) {
+			CurrentTrack = i;
+			break;
+		}
+
+        if (i == TrackCount)
         {
             video_mgr_err("%s::%s track id out of range (%d - %d)\n", FILENAME, __FUNCTION__, id, TrackCount);
             ret = cERR_VIDEO_MGR_ERROR;
