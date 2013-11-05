@@ -337,6 +337,8 @@ static void FFMPEGThread(Context_t *context) {
     uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;
 
     ffmpeg_printf(10, "\n");
+    int oldstate;
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
     while ( context->playback->isCreationPhase )
     {
@@ -833,7 +835,15 @@ static void FFMPEGThread(Context_t *context) {
     if (decoded_frame)
 	avcodec_free_frame(&decoded_frame);
 
-    hasPlayThreadStarted = 0;
+     if (avContext != NULL) {
+	avformat_close_input(avContext);
+	avContext = NULL;
+     }
+
+     avformat_network_deinit();
+     
+     isContainerRunning = 0;
+     hasPlayThreadStarted = 0;
 
     ffmpeg_printf(10, "terminating\n");
 }
@@ -1286,22 +1296,21 @@ static int container_ffmpeg_stop(Context_t *context) {
 	if (wait_time == 0) {
 		ffmpeg_err( "Timeout waiting for thread!\n");
 		ret = cERR_CONTAINER_FFMPEG_ERR;
+		pthread_cancel(PlayThread);
+		usleep(100000);
+	}
+	
+	if (isContainerRunning)
+	{
+		if (avContext != NULL) {
+			avformat_close_input(avContext);
+			avContext = NULL;
+		}
+		avformat_network_deinit();
 	}
 
 	hasPlayThreadStarted = 0;
         terminating = 1;
-
-	getMutex(FILENAME, __FUNCTION__,__LINE__);
-
-	if (avContext != NULL) {
-		avformat_close_input(avContext);
-		avContext = NULL;
-	}
-
-	avformat_network_deinit();
-	isContainerRunning = 0;
-
-	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
 
 	ffmpeg_printf(10, "ret %d\n", ret);
 	return ret;
