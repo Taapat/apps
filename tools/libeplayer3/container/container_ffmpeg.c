@@ -337,8 +337,6 @@ static void FFMPEGThread(Context_t *context) {
     uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;
 
     ffmpeg_printf(10, "\n");
-    int oldstate;
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 
     while ( context->playback->isCreationPhase )
     {
@@ -378,6 +376,7 @@ static void FFMPEGThread(Context_t *context) {
 		if(bofcount == 1)
 		{
 			showtime = av_gettime();
+			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
 			usleep(100000);
 			continue;
 		}
@@ -426,7 +425,8 @@ static void FFMPEGThread(Context_t *context) {
 	AVPacket   packet;
 	av_init_packet(&packet);
 
-	if (av_read_frame(avContext, &packet) == 0 )
+        int avres = 0;
+	if ((avres = av_read_frame(avContext, &packet)) == 0 )
 	{
 	    long long int pts;
 	    Track_t * videoTrack = NULL;
@@ -823,9 +823,13 @@ static void FFMPEGThread(Context_t *context) {
 				break; //while;
 			}
 			av_free_packet(&packet);
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__); 
-	}
+	} else {
+		ffmpeg_printf(10, "av_read_frame() - failed: %s\n", av_err2str(avres));
+        }
+	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
     }/* while */
+
+    isContainerRunning = 0;
 
     if (context && context->playback && context->output && context->playback->abortRequested)
 	context->output->Command(context, OUTPUT_CLEAR, NULL);        // Freeing the allocated buffer for softdecoding
@@ -835,17 +839,17 @@ static void FFMPEGThread(Context_t *context) {
     if (decoded_frame)
 	avcodec_free_frame(&decoded_frame);
 
-     if (avContext != NULL) {
-	avformat_close_input(avContext);
+    if (avContext != NULL) {
+	avformat_close_input(&avContext);
 	avContext = NULL;
      }
 
+     ffmpeg_printf(10, "avformat_network_deinit\n");
      avformat_network_deinit();
      
-     isContainerRunning = 0;
      hasPlayThreadStarted = 0;
 
-    ffmpeg_printf(10, "terminating\n");
+     ffmpeg_printf(10, "terminating\n");
 }
 
 /* **************************** */
@@ -860,7 +864,7 @@ static int interrupt_cb(void *ctx)
 }
 
 
-static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
+static int container_ffmpeg_init(Context_t *context, char * filename)
 {
 	int err;
 
@@ -887,7 +891,7 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 	avcodec_register_all();
 	av_register_all();
 	avformat_network_init();
-	//    av_log_set_level( AV_LOG_DEBUG );
+	av_log_set_level( AV_LOG_DEBUG );
 
 	context->playback->abortRequested = 0;
 	avContext = avformat_alloc_context();
@@ -896,10 +900,9 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 
 	if(strstr(filename, "http://") == filename)
 	{
-		avContext->max_analyze_duration = 100000;
-		avContext->flags |= AVIO_FLAG_NONBLOCK;
+		avContext->max_analyze_duration = 1000;
 		AVDictionary *avio_opts = NULL;
-		av_dict_set(&avio_opts, "timeout", "20000", 0); //20sec
+		//av_dict_set(&avio_opts, "timeout", "200000", 0); //20sec
 		if ((err = avformat_open_input(&avContext, filename, NULL, &avio_opts)) != 0)
 		{
 			char error[512];
@@ -911,6 +914,7 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 			if(avio_opts != NULL) av_dict_free(&avio_opts);
 			return cERR_CONTAINER_FFMPEG_OPEN;
 		}
+		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
 	}
 	else
 	{    
@@ -924,13 +928,10 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 
 			return cERR_CONTAINER_FFMPEG_OPEN;
 		}
+		avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
 	}
 
-	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
 	avContext->flags |= AVFMT_FLAG_GENPTS;
-
-	if (context->playback->noprobe)
-		avContext->max_analyze_duration = 1;
 
 	ffmpeg_printf(20, "find_streaminfo\n");
 
@@ -953,14 +954,6 @@ static int container_ffmpeg_init_unsafe(Context_t *context, char * filename)
 	return res;
 }
 
-static int container_ffmpeg_init(Context_t *context, char * filename)
-{
-	int ret = -1; 
-	getMutex(FILENAME, __FUNCTION__,__LINE__);
-	ret = container_ffmpeg_init_unsafe(context, filename);
-	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
-	return ret;
-}
 
 int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initial)
 {
@@ -1285,18 +1278,18 @@ static int container_ffmpeg_stop(Context_t *context) {
 	return cERR_CONTAINER_FFMPEG_ERR;
     }
     if (context->playback)
-	context->playback->isPlaying = 0;
+	context->playback->abortRequested = 1;
+
 
 	while ( (hasPlayThreadStarted != 0) && (--wait_time) > 0 ) {
 		ffmpeg_printf(10, "Waiting for ffmpeg thread to terminate itself, will try another %d times\n", wait_time);
 
-		usleep(100000);
+		usleep(1000000);
 	}
 
 	if (wait_time == 0) {
 		ffmpeg_err( "Timeout waiting for thread!\n");
 		ret = cERR_CONTAINER_FFMPEG_ERR;
-		pthread_cancel(PlayThread);
 		usleep(100000);
 	}
 	
