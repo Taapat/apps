@@ -817,14 +817,18 @@ static void FFMPEGThread(Context_t *context) {
 			}
 			else  
 			{
-				ffmpeg_err("no data ->end of file reached ? \n");
-				av_free_packet(&packet);
-				releaseMutex(FILENAME, __FUNCTION__,__LINE__);
-				break; //while;
+				ffmpeg_err("Track pid %d, did not match any known track ids\n", pid);
 			}
 			av_free_packet(&packet);
 	} else {
 		ffmpeg_printf(10, "av_read_frame() - failed: %s\n", av_err2str(avres));
+		if (avres != AVERROR(EAGAIN)) 
+		{
+			av_free_packet(&packet);
+			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			break;
+			
+		}
         }
 	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
     }/* while */
