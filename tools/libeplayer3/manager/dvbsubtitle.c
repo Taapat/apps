@@ -139,6 +139,7 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
 		continue;
             tracklist[j]    = strdup(Tracks[i].Name);
             tracklist[j+1]  = strdup(Tracks[i].Encoding);
+            j+=2;
         }
         tracklist[j] = NULL;
     }
@@ -214,16 +215,16 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     }
     case MANAGER_GETENCODING: {
         if ((TrackCount > 0) && (CurrentTrack >=0))
-            *((char**)argument) = (char *)strdup(Tracks[CurrentTrack].Encoding);
+            *((char**)argument) = (char *)Tracks[CurrentTrack].Encoding;
         else
-            *((char**)argument) = (char *)strdup("");
+            *((char**)argument) = (char *)"";
         break;
     }
     case MANAGER_GETNAME: {
         if ((TrackCount > 0) && (CurrentTrack >=0))
-            *((char**)argument) = (char *)strdup(Tracks[CurrentTrack].Name);
+            *((char**)argument) = (char *)Tracks[CurrentTrack].Name;
         else
-            *((char**)argument) = (char *)strdup("");
+            *((char**)argument) = (char *)"";
         break;
     }
     case MANAGER_SET: {

@@ -223,8 +223,6 @@ int main(int argc,char* argv[]) {
         player->manager->audio->Command(player, MANAGER_GETENCODING, &AudioTrackEncoding);
         player->manager->audio->Command(player, MANAGER_GETNAME, &AudioTrackName);
         printf("Current Audio Track : %d %s %s\n", AudioTrackId, AudioTrackEncoding, AudioTrackName);
-        free(AudioTrackEncoding);
-        free(AudioTrackName);
         AudioTrackEncoding = NULL;
         AudioTrackName = NULL;
 
@@ -232,8 +230,6 @@ int main(int argc,char* argv[]) {
         player->manager->video->Command(player, MANAGER_GETENCODING, &AudioTrackEncoding);
         player->manager->video->Command(player, MANAGER_GETNAME, &AudioTrackName);
         printf("Current Video Track : %d %s %s\n", AudioTrackId, AudioTrackEncoding, AudioTrackName);
-        free(AudioTrackEncoding);
-        free(AudioTrackName);
         AudioTrackEncoding = NULL;
         AudioTrackName = NULL;
 
@@ -241,8 +237,6 @@ int main(int argc,char* argv[]) {
         player->manager->subtitle->Command(player, MANAGER_GETENCODING, &AudioTrackEncoding);
         player->manager->subtitle->Command(player, MANAGER_GETNAME, &AudioTrackName);
         printf("Current Subtitle Track : %d %s %s\n", AudioTrackId, AudioTrackEncoding, AudioTrackName);
-        free(AudioTrackEncoding);
-        free(AudioTrackName);
         AudioTrackEncoding = NULL;
         AudioTrackName = NULL;
 
@@ -337,8 +331,6 @@ int main(int argc,char* argv[]) {
                     player->manager->audio->Command(player, MANAGER_GETENCODING, &AudioTrackEncoding);
                     player->manager->audio->Command(player, MANAGER_GETNAME, &AudioTrackName);
                     printf("Current Audio Track : %d %s %s\n", AudioTrackId, AudioTrackEncoding, AudioTrackName);
-                    free(AudioTrackEncoding);
-                    free(AudioTrackName);
                     AudioTrackEncoding = NULL;
                     AudioTrackName = NULL;
 
@@ -381,8 +373,6 @@ int main(int argc,char* argv[]) {
                     player->manager->subtitle->Command(player, MANAGER_GETENCODING, &SubtitleTrackEncoding);
                     player->manager->subtitle->Command(player, MANAGER_GETNAME, &SubtitleTrackName);
                     printf("Current Subtitle Track : %d %s %s\n", SubtitleTrackId, SubtitleTrackEncoding, SubtitleTrackName);
-                    free(SubtitleTrackEncoding);
-                    free(SubtitleTrackName);
                     SubtitleTrackEncoding = NULL;
                     SubtitleTrackName = NULL;
 

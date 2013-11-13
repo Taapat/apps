@@ -133,11 +133,12 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
             return NULL;
         }
 
-        for (i = 0, j = 0; i < TrackCount; i++, j+=2) {
+        for (i = 0, j = 0; i < TrackCount; i++) {
 	    if (Tracks[i].pending)
 		continue;
             tracklist[j]    = strdup(Tracks[i].Name);
             tracklist[j+1]  = strdup(Tracks[i].Encoding);
+            j+=2;
         }
         tracklist[j] = NULL;
     }
@@ -217,9 +218,9 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     }
     case MANAGER_GETNAME: {
         if ((TrackCount > 0) && (CurrentTrack >=0))
-            *((char**)argument) = (char *)strdup(Tracks[CurrentTrack].Name);
+            *((char**)argument) = (char *)Tracks[CurrentTrack].Name;
         else
-            *((char**)argument) = (char *)strdup("");
+            *((char**)argument) = (char *)"";
         break;
     }
     case MANAGER_SET: {
