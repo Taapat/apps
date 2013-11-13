@@ -103,6 +103,7 @@ static int ManagerAdd(Context_t  *context, Track_t track) {
 
     if (TrackCount < TRACKWRAP) {
         copyTrack(&Tracks[TrackCount], &track);
+        Tracks[TrackCount].pending = 0;
         TrackCount++;
     } else {
 
