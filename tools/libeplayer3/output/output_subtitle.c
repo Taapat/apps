@@ -224,13 +224,13 @@ int subtitle_ParseSRT (char **Line) {
     replace_all(Line, "\n\n", "\\N");
     replace_all(Line, "\n", "");
     replace_all(Line, "\\N", "\n");
-    replace_all(Line, "�", "oe");
-    replace_all(Line, "�", "ae");
-    replace_all(Line, "�", "ue");
-    replace_all(Line, "�", "Oe");
-    replace_all(Line, "�", "Ae");
-    replace_all(Line, "�", "Ue");
-    replace_all(Line, "�", "ss");
+    replace_all(Line, "ö", "oe");
+    replace_all(Line, "ä", "ae");
+    replace_all(Line, "ü", "ue");
+    replace_all(Line, "Ö", "Oe");
+    replace_all(Line, "Ä", "Ae");
+    replace_all(Line, "Ü", "Ue");
+    replace_all(Line, "ß", "ss");
 
     subtitle_printf(10, "<- Text=%s\n", *Line);
 
@@ -251,13 +251,13 @@ int subtitle_ParseSSA (char **Line) {
     replace_all(Line, "\n\n", "\\N");
     replace_all(Line, "\n", "");
     replace_all(Line, "\\N", "\n");
-    replace_all(Line, "�", "oe");
-    replace_all(Line, "�", "ae");
-    replace_all(Line, "�", "ue");
-    replace_all(Line, "�", "Oe");
-    replace_all(Line, "�", "Ae");
-    replace_all(Line, "�", "Ue");
-    replace_all(Line, "�", "ss");
+    replace_all(Line, "ö", "oe");
+    replace_all(Line, "ä", "ae");
+    replace_all(Line, "ü", "ue");
+    replace_all(Line, "Ö", "Oe");
+    replace_all(Line, "Ä", "Ae");
+    replace_all(Line, "Ü", "Ue");
+    replace_all(Line, "ß", "ss");
 
     subtitle_printf(10, "<- Text=%s\n", *Line);
 
