@@ -964,25 +964,13 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 	if (terminating)
 		return cERR_CONTAINER_FFMPEG_NO_ERROR;
 
-	Track_t * audioTrack = NULL;
-	Track_t * subtitleTrack = NULL;
-	Track_t * dvbsubtitleTrack = NULL;
-	Track_t * teletextTrack = NULL;
-
-	context->manager->audio->Command(context, MANAGER_GET_TRACK, &audioTrack);
-	if (initial)
-		context->manager->subtitle->Command(context, MANAGER_GET_TRACK, &subtitleTrack);
-	context->manager->dvbsubtitle->Command(context, MANAGER_GET_TRACK, &dvbsubtitleTrack);
-	context->manager->teletext->Command(context, MANAGER_GET_TRACK, &teletextTrack);
 
 	if (context->manager->video)
 		context->manager->video->Command(context, MANAGER_INIT_UPDATE, NULL);
 	if (context->manager->audio)
 		context->manager->audio->Command(context, MANAGER_INIT_UPDATE, NULL);
-#if 0
 	if (context->manager->subtitle)
 		context->manager->subtitle->Command(context, MANAGER_INIT_UPDATE, NULL);
-#endif
 	if (context->manager->dvbsubtitle)
 		context->manager->dvbsubtitle->Command(context, MANAGER_INIT_UPDATE, NULL);
 	if (context->manager->teletext)
