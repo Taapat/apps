@@ -821,7 +821,7 @@ static void FFMPEGThread(Context_t *context) {
 			}
 			else  
 			{
-				ffmpeg__printf(20, "Track pid %d, did not match any known track ids, codec id: %d\n", pid, avContext->streams[packet.stream_index]->codec->codec_id);
+				ffmpeg_printf(20, "Track pid %d, did not match any known track ids, codec id: %d\n", pid, avContext->streams[packet.stream_index]->codec->codec_id);
 			}
 			av_free_packet(&packet);
 	} else {
