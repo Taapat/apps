@@ -230,12 +230,16 @@ static char* Codec2Encoding(AVCodecContext *codec, int* version)
     case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
     case AV_CODEC_ID_DVB_TELETEXT:
     case AV_CODEC_ID_SRT:
+    case AV_CODEC_ID_SUBRIP:
         return "S_TEXT/SRT"; /* fixme */
     default:
 	// Default to injected-pcm for unhandled audio types.
 	if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
 		return "A_IPCM";
-    	ffmpeg_err("Codec ID %ld (%.8lx) not found\n", (long)codec->codec_id, (long)codec->codec_id);
+
+        if (codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+                return "S_TEXT/SRT";
+        ffmpeg_err("Codec ID %ld (%.8lx) not found\n", (long)codec->codec_id, (long)codec->codec_id);
     }
     return NULL;
 }
