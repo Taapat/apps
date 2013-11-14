@@ -821,7 +821,7 @@ static void FFMPEGThread(Context_t *context) {
 			}
 			else  
 			{
-				ffmpeg_err("Track pid %d, did not match any known track ids\n", pid);
+				ffmpeg__printf(20, "Track pid %d, did not match any known track ids, codec id: %d\n", pid, avContext->streams[packet.stream_index]->codec->codec_id);
 			}
 			av_free_packet(&packet);
 	} else {
@@ -994,11 +994,11 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 		char* encoding = Codec2Encoding(stream->codec, &version);
 
-		if (encoding != NULL)
-			ffmpeg_printf(1, "%d. encoding = %s - version %d\n", n, encoding, version);
-
 		if (!stream->id)
 			stream->id = n;
+
+               if (encoding != NULL)
+                        ffmpeg_printf(1, "%d. encoding = %s - version %d\n", stream->id, encoding, version);
 
 		/* some values in track are unset and therefor copyTrack segfaults.
 		 * so set it by default to NULL!

@@ -224,15 +224,14 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
         break;
     }
     case MANAGER_SET: {
-        int id = (int) argument;
-
-	for (i = 0; i < TrackCount; i++)
-		if (Tracks[i].Id == *((int*)argument)) {
-			CurrentTrack = i;
-			break;
-		}
-
-        if (i == TrackCount)
+        int id = *((int*)argument);
+        
+        video_mgr_printf(20, "%s::%s MANAGER_SET id=%d\n", FILENAME, __FUNCTION__, id);
+        if (id < TrackCount)
+        {
+            CurrentTrack = id;
+	}
+        else
         {
             video_mgr_err("%s::%s track id out of range (%d - %d)\n", FILENAME, __FUNCTION__, id, TrackCount);
             ret = cERR_VIDEO_MGR_ERROR;

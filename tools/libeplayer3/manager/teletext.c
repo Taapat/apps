@@ -231,17 +231,16 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
         break;
     }
     case MANAGER_SET: {
-	int i;
-        teletext_mgr_printf(20, "%s::%s MANAGER_SET id=%d\n", FILENAME, __FUNCTION__, *((int*)argument));
+	int id = *((int*)argument);
+        teletext_mgr_printf(20, "%s::%s MANAGER_SET id=%d\n", FILENAME, __FUNCTION__, id);
 
-	for (i = 0; i < TrackCount; i++)
-		if (Tracks[i].Id == *((int*)argument)) {
-			CurrentTrack = i;
-			break;
-		}
-
-        if (i == TrackCount) {
-            teletext_mgr_err("%s::%s track id %d unknown\n", FILENAME, __FUNCTION__, *((int*)argument));
+        if (id < TrackCount)
+        {
+            CurrentTrack = id;
+	}
+        else
+        {
+            teletext_mgr_err("%s::%s track id out of range (%d - %d)\n", FILENAME, __FUNCTION__, id, TrackCount);
             ret = cERR_TELETEXT_MGR_ERROR;
         }
         break;
