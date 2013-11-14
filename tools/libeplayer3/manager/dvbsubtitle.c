@@ -134,7 +134,7 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
             return NULL;
         }
 
-        for (i = 0, j = 0; i < TrackCount; i++, j+=2) {
+        for (i = 0, j = 0; i < TrackCount; i++) {
 	    if (Tracks[i].pending)
 		continue;
             tracklist[j]    = strdup(Tracks[i].Name);
