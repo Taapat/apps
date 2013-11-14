@@ -78,25 +78,23 @@ static int CurrentTrack = 0; //TRACK[0] as default.
 /* ***************************** */
 
 static int ManagerAdd(Context_t  *context, Track_t track) {
+    int i;
 
     audio_mgr_printf(10, "%s::%s name=\"%s\" encoding=\"%s\" id=%d\n", FILENAME, __FUNCTION__, track.Name, track.Encoding, track.Id);
 
     if (Tracks == NULL) {
         Tracks = malloc(sizeof(Track_t) * TRACKWRAP);
-        int i;
+
+        if (Tracks == NULL) {
+            audio_mgr_err("%s:%s malloc failed\n", FILENAME, __FUNCTION__);
+            return cERR_AUDIO_MGR_ERROR;
+        }
+        
         for (i = 0; i < TRACKWRAP; i++)
             Tracks[i].Id = -1;
-    }
-
-    if (Tracks == NULL)
-    {
-        audio_mgr_err("%s:%s malloc failed\n", FILENAME, __FUNCTION__);
-        return cERR_AUDIO_MGR_ERROR;
-    }
-
-    int i;
-    for (i = 0; i < TRACKWRAP; i++) {
-        if (Tracks[i].Id == track.Id) {
+    } else {
+        for (i = 0; i < TRACKWRAP; i++) {
+            if (Tracks[i].Id == track.Id) {
             Tracks[i].pending = 0;
             return cERR_AUDIO_MGR_NO_ERROR;
         }
@@ -125,7 +123,6 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
     audio_mgr_printf(10, "%s::%s\n", FILENAME, __FUNCTION__);
 
     if (Tracks != NULL) {
-
         tracklist = malloc(sizeof(char *) * ((TrackCount*2) + 1));
 
         if (tracklist == NULL)
@@ -135,11 +132,13 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
         }
 
         for (i = 0, j = 0; i < TrackCount; i++) {
-	    if (Tracks[i].pending)
-		continue;
-            tracklist[j]    = strdup(Tracks[i].Name);
-            tracklist[j+1]  = strdup(Tracks[i].Encoding);
-            j+=2;
+	    if (Tracks[i].pending == 0) {
+                tracklist[j++]  = strdup(Tracks[i].Name);
+                tracklist[j++]  = strdup(Tracks[i].Encoding);
+            } else {
+                tracklist[j++]  = strdup("");
+                tracklist[j++]  = strdup("");
+            }
         }
         tracklist[j] = NULL;
     }
@@ -150,9 +149,7 @@ static char ** ManagerList(Context_t  *context __attribute__((unused))) {
 }
 
 static int ManagerDel(Context_t * context) {
-
     int i = 0;
-
     audio_mgr_printf(10, "%s::%s\n", FILENAME, __FUNCTION__);
 
     if(Tracks != NULL) {
@@ -161,8 +158,7 @@ static int ManagerDel(Context_t * context) {
         }
         free(Tracks);
         Tracks = NULL;
-    } else
-    {
+    } else {
         audio_mgr_err("%s::%s nothing to delete!\n", FILENAME, __FUNCTION__);
         return cERR_AUDIO_MGR_ERROR;
     }
@@ -186,13 +182,12 @@ static int Command(void  *_context, ManagerCmd_t command, void * argument) {
     switch(command) {
     case MANAGER_ADD: {
         Track_t * track = argument;
-
         ret = ManagerAdd(context, *track);
         break;
     }
     case MANAGER_LIST: {
 	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
-        *((char***)argument) = (char **)ManagerList(context);
+        ((char**)argument) = ManagerList(context);
         break;
     }
     case MANAGER_GET: {

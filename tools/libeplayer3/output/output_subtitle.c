@@ -103,11 +103,14 @@ static int readPointer = 0;
 static int writePointer = 0;
 static int hasThreadStarted = 0;
 static int isSubtitleOpened = 0;
-static int	screen_width		= 0;
-static int	screen_height		= 0;
-static int	destStride		= 0;
-static void	(*framebufferBlit)	= NULL;
-static uint32_t	*destination		= NULL;
+
+static int            screen_width     = 0;
+static int            screen_height    = 0;
+static int            destStride       = 0;
+static int            shareFramebuffer = 0;
+static int            framebufferFD    = -1;
+static unsigned char* destination      = NULL;
+static void           (*framebufferBlit)() = NULL;
 
 /* ***************************** */
 /* Prototypes                    */
@@ -688,7 +691,7 @@ static int subtitle_Play(Context_t* context) {
 }
 
 static int subtitle_Stop(Context_t* context __attribute__((unused))) {
-    int wait_time = 20;
+    int wait_time = 100;
     int i;
     
     subtitle_printf(10, "\n");
@@ -778,18 +781,22 @@ static int Command(void  *_context, OutputCmd_t command, void * argument) {
         SubtitleOutputDef_t* out = (SubtitleOutputDef_t*)argument;
         out->screen_width = screen_width;
         out->screen_height = screen_height;
-        out->framebufferBlit = framebufferBlit;
+        out->shareFramebuffer = shareFramebuffer;
+        out->framebufferFD = framebufferFD;
         out->destination = destination;
         out->destStride = destStride;
+        out->framebufferBlit = framebufferBlit;
         break;
     }
     case OUTPUT_SET_SUBTITLE_OUTPUT: {
         SubtitleOutputDef_t* out = (SubtitleOutputDef_t*)argument;
         screen_width = out->screen_width;
         screen_height = out->screen_height;
-        framebufferBlit = out->framebufferBlit;
+        shareFramebuffer = out->shareFramebuffer;
+        framebufferFD = out->framebufferFD;
         destination = out->destination;
         destStride = out->destStride;
+        framebufferBlit = out->framebufferBlit;
         break;
     }
     case OUTPUT_SUBTITLE_REGISTER_FUNCTION: {

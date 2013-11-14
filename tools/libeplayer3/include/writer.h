@@ -34,7 +34,7 @@ typedef struct {
     int                    fd;
     unsigned int           Screen_Width;
     unsigned int           Screen_Height;
-    uint32_t			   *destination;
+    unsigned char*         destination;
     unsigned int           destStride;
 } WriterFBCallData_t;
 
