@@ -7,8 +7,8 @@ INCLUDES = \
 
 libeplayer3_la_SOURCES =  \
 	container/container.c container/container_ffmpeg.c container/text_srt.c \
-    container/text_ssa.c container/container_ass.c \
-	manager/generic.c manager/manager.c \
+	container/text_ssa.c container/container_ass.c \
+	manager/manager.c \
 	output/output_subtitle.c output/linuxdvb.c output/output.c output/output_pipe.c \
 	playback/playback.c output/writer/writer.c output/writer/aac.c output/writer/wmv.c \
 	output/writer/ac3.c output/writer/divx.c output/writer/wma.c output/writer/pes.c \
