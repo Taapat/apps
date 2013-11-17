@@ -117,8 +117,8 @@ static unsigned char isContainerRunning = 0;
 static ASS_Library *ass_library;
 static ASS_Renderer *ass_renderer;
 
-static float ass_font_scale = 0.4; // was: 0.7
-static float ass_line_spacing = 0.4; // was: 0.7
+static float ass_font_scale = 0.7;
+static float ass_line_spacing = 0.7;
 
 static unsigned int screen_width     = 0;
 static unsigned int screen_height    = 0;
@@ -176,15 +176,12 @@ static void releaseMutex(int line) {
 
 /* release and undisplay all saved regions
  */
-void releaseRegions()
+void releaseRegions(Writer_t* writer)
 {
     region_t* next, *old;
-    Writer_t* writer;
 
     if (firstRegion == NULL)
         return;
-
-    writer = getDefaultFramebufferWriter();
 
     if (writer == NULL)
     {
@@ -230,17 +227,14 @@ void releaseRegions()
  * regions are also released when new regions are
  * detected (see ETSI EN 300 743 Chapter Page Composition)
  */
-void checkRegions()
+void checkRegions(Writer_t* writer)
 {
 #define cDeltaTime 2
     region_t* next, *old, *prev;
-    Writer_t* writer;
     time_t now = time(NULL);
     
     if (firstRegion == NULL)
         return;
-
-    writer = getDefaultFramebufferWriter();
 
     if (!writer)
     {
@@ -304,12 +298,15 @@ void storeRegion(unsigned int x, unsigned int y, unsigned int w, unsigned int h,
  
     *new = malloc(sizeof(region_t));
 
-    (*new)->next      = NULL;
-    (*new)->x         = x;
-    (*new)->y         = y;
-    (*new)->w         = w;
-    (*new)->h         = h;
-    (*new)->undisplay = undisplay;
+		if(*new != NULL) {
+	    (*new)->next      = NULL;
+	    (*new)->x         = x;
+	    (*new)->y         = y;
+	    (*new)->w         = w;
+	    (*new)->h         = h;
+	    (*new)->undisplay = undisplay;
+    }
+    ass_printf(20, "<\n");
 }
 
 /* **************************** */
@@ -323,7 +320,8 @@ static void ASSThread(Context_t *context) {
     prctl (PR_SET_NAME, (unsigned long)&threadname);
     Writer_t* writer;
     
-    ass_printf(10, "\n");
+    ass_printf(10, ">\n");
+    hasPlayThreadStarted = 1;
 
     while ( context->playback->isCreationPhase || isContainerRunning == 0)
     {
@@ -340,7 +338,7 @@ static void ASSThread(Context_t *context) {
         ass_err("no framebuffer writer found!\n");
     }
 
-    while ( context && context->playback && context->playback->isPlaying ) {
+    while ( context && context->playback && context->playback->isPlaying && hasPlayThreadStarted == 1) {
 
         //IF MOVIE IS PAUSED, WAIT
         if (context->playback->isPaused) {
@@ -375,10 +373,9 @@ static void ASSThread(Context_t *context) {
             //       durch den sleep verschlafen wird. Besser wäre es den nächsten
             //       subtitel zeitpunkt zu bestimmen und solange zu schlafen.
             usleep(10000);
-			if(!context->playback->mayWriteToFramebuffer)
-				continue;
+
             getMutex(__LINE__);
-	    	checkRegions();
+	    checkRegions(writer);
 
             if(ass_renderer && ass_track)
                  img = ass_render_frame(ass_renderer, ass_track, playPts / 90.0, &change);
@@ -392,7 +389,7 @@ static void ASSThread(Context_t *context) {
                  * release the old regions on display.
                  */
                 if (change != 0)
-                    releaseRegions();
+                    releaseRegions(writer);
 
                 while (context && context->playback && context->playback->isPlaying &&
                        (img) && (change != 0))
@@ -483,7 +480,7 @@ static void ASSThread(Context_t *context) {
         }
         
         /* cleanup no longer used but not overwritten regions */
-        checkRegions();
+        checkRegions(writer);
         if(framebufferBlit != NULL && needsBlit){
           needsBlit=0;
           (*framebufferBlit)();
@@ -618,10 +615,12 @@ static int container_ass_stop(Context_t *context __attribute__((unused))) {
         return cERR_CONTAINER_ASS_ERROR;
     }
 
-    while ( (hasPlayThreadStarted != 0) && (--wait_time) > 0 ) {
-        ass_printf(10, "Waiting for ass thread to terminate itself, will try another %d times\n", wait_time);
-
-        usleep(100000);
+	if(hasPlayThreadStarted != 0) {
+	    hasPlayThreadStarted = 2;
+	    while ( (hasPlayThreadStarted != 0) && (--wait_time) > 0 ) {
+	        ass_printf(10, "Waiting for ass thread to terminate itself, will try another %d times\n", wait_time);
+	        usleep(100000);
+	    }
     }
 
     if (wait_time == 0) {
@@ -631,8 +630,9 @@ static int container_ass_stop(Context_t *context __attribute__((unused))) {
     }
 
     getMutex(__LINE__);
-
-    releaseRegions();
+    
+    writer = getDefaultFramebufferWriter();
+    releaseRegions(writer);
 
     if (ass_track)
         ass_free_track(ass_track);
@@ -651,8 +651,6 @@ static int container_ass_stop(Context_t *context __attribute__((unused))) {
 
     hasPlayThreadStarted = 0;
 
-    writer = getDefaultFramebufferWriter();
-
     if (writer) {
         writer->reset();
     }
@@ -668,6 +666,7 @@ static int container_ass_switch_subtitle(Context_t* context, int* arg __attribut
     int error;
     int ret = cERR_CONTAINER_ASS_NO_ERROR;
     pthread_attr_t attr;
+    Writer_t* writer;
 
     ass_printf(10, "\n");
 
@@ -696,8 +695,6 @@ static int container_ass_switch_subtitle(Context_t* context, int* arg __attribut
         }
         else {
             ass_printf(10, "Created thread\n");
-
-            hasPlayThreadStarted = 1;
         }
     }
     else {
@@ -708,7 +705,8 @@ static int container_ass_switch_subtitle(Context_t* context, int* arg __attribut
 
     getMutex(__LINE__);
 
-    releaseRegions();
+    writer = getDefaultFramebufferWriter();
+    releaseRegions(writer);
 
     /* free the track so extradata will be written next time
      * process_data is called.

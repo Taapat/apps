@@ -431,6 +431,7 @@ static void* SubtitleThread(void* data) {
     unsigned long long int  Pts                 = 0;
 
     subtitle_printf(10, "\n");
+    hasThreadStarted = 1;
 
     while ( context->playback->isCreationPhase ) {
         subtitle_err("Thread waiting for end of init phase...\n");
@@ -441,7 +442,7 @@ static void* SubtitleThread(void* data) {
 
     while ( context &&
             context->playback &&
-            context->playback->isPlaying) {
+            context->playback->isPlaying && hasThreadStarted == 1) {
 
         int curtrackid = -1;
         
@@ -458,7 +459,7 @@ static void* SubtitleThread(void* data) {
 
             if (context && context->playback)
                 context->playback->Command(context, PLAYBACK_PTS, &Pts);
-            else return NULL;
+            else break;
 
             if(Pts > subPts) {
                 subtitle_printf(10,"subtitle is to late, ignoring\n");
@@ -472,7 +473,7 @@ static void* SubtitleThread(void* data) {
             while ( context &&
                     context->playback &&
                     context->playback->isPlaying &&
-                    Pts < subPts) {
+                    Pts < subPts && hasThreadStarted == 1) {
 
                 unsigned long int diff = subPts - Pts;
                 diff = (diff*1000)/90.0;
@@ -495,7 +496,7 @@ static void* SubtitleThread(void* data) {
             if (    context &&
                     context->playback &&
                     context->playback->isPlaying &&
-                    subText != NULL ) {
+                    subText != NULL && hasThreadStarted == 1) {
 
                 if(clientFunction != NULL)
                     clientFunction(subMilliDuration, strlen(subText), subText, clientData);
@@ -676,7 +677,6 @@ static int subtitle_Play(Context_t* context) {
         } else
         {
            subtitle_printf(10, "Created thread\n");
-           hasThreadStarted = 1;
         }
     }
     else
@@ -696,9 +696,12 @@ static int subtitle_Stop(Context_t* context __attribute__((unused))) {
     
     subtitle_printf(10, "\n");
 
-    while ( (hasThreadStarted != 0) && (--wait_time) > 0 ) {
-        subtitle_printf(10, "Waiting for subtitle thread to terminate itself, will try another %d times\n", wait_time);
-        usleep(100000);
+	if(hasThreadStarted != 0) {
+	    hasThreadStarted = 2;
+	    while ( (hasThreadStarted != 0) && (--wait_time) > 0 ) {
+	        subtitle_printf(10, "Waiting for subtitle thread to terminate itself, will try another %d times\n", wait_time);
+	        usleep(100000);
+	    }
     }
 
     if (wait_time == 0) {
