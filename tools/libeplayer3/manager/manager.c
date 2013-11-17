@@ -99,6 +99,7 @@ static void Initialize()
         }
         for (j = 0; j < TRACKWRAP; ++j) tracksInfo[i].Tracks[j].Id = -1;
     }
+    tracksInfo[TRACK_TYPE_SUBTITLE].Current = 0;
     initialized = 1;
 }
 

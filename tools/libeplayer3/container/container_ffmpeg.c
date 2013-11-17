@@ -133,21 +133,34 @@ static void initMutex(void)
     pthread_mutex_init(&mutex, NULL);
 }
 
-static void getMutex(const char *filename __attribute__((unused)), const char *function __attribute__((unused)), int line) {
+static int lock(const char *filename __attribute__((unused)), const char *function __attribute__((unused)), int line) {
     ffmpeg_printf(100, "::%d requesting mutex\n", line);
 
     if (!mutexInitialized)
 	initMutex();
 
-    pthread_mutex_lock(&mutex);
+    int rc = pthread_mutex_lock(&mutex);
 
-    ffmpeg_printf(100, "::%d received mutex\n", line);
+    ffmpeg_printf(100, "::%d received mutex: %d\n", line, rc);
+    return rc;
 }
 
-static void releaseMutex(const char *filename __attribute__((unused)), const const char *function __attribute__((unused)), int line) {
-    pthread_mutex_unlock(&mutex);
+static int trylock(const char *filename __attribute__((unused)), const char *function __attribute__((unused)), int line) {
+    ffmpeg_printf(100, "::%d requesting mutex\n", line);
 
-    ffmpeg_printf(100, "::%d released mutex\n", line);
+    if (!mutexInitialized)
+        initMutex();
+
+    int rc = pthread_mutex_trylock(&mutex);
+
+    ffmpeg_printf(100, "::%d received mutex: %d\n", line, rc);
+    return rc;
+}
+
+static int unlock(const char *filename __attribute__((unused)), const const char *function __attribute__((unused)), int line) {
+    int rc = pthread_mutex_unlock(&mutex);
+    ffmpeg_printf(100, "::%d released mutex: %d\n", line, rc);
+    return rc;
 }
 
 static char* Codec2Encoding(AVCodecContext *codec, int* version)
@@ -366,10 +379,10 @@ static void FFMPEGThread(Context_t *context) {
             continue;
         }
 
-	getMutex(FILENAME, __FUNCTION__,__LINE__);
+	lock(FILENAME, __FUNCTION__,__LINE__);
 
 	if (!context->playback || !context->playback->isPlaying) {
-    		releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+    		unlock(FILENAME, __FUNCTION__,__LINE__);
 		continue;
 	}
 
@@ -380,7 +393,7 @@ static void FFMPEGThread(Context_t *context) {
 		if(bofcount == 1)
 		{
 			showtime = av_gettime();
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			usleep(100000);
 			continue;
 		}
@@ -829,12 +842,12 @@ static void FFMPEGThread(Context_t *context) {
 		if (avres != AVERROR(EAGAIN)) 
 		{
 			av_free_packet(&packet);
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			break;
 			
 		}
         }
-	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+	unlock(FILENAME, __FUNCTION__,__LINE__);
     }/* while */
 
     isContainerRunning = 0;
@@ -847,17 +860,9 @@ static void FFMPEGThread(Context_t *context) {
     if (decoded_frame)
 	avcodec_free_frame(&decoded_frame);
 
-    if (avContext != NULL) {
-	avformat_close_input(&avContext);
-	avContext = NULL;
-     }
+    hasPlayThreadStarted = 0;
 
-     ffmpeg_printf(10, "avformat_network_deinit\n");
-     avformat_network_deinit();
-     
-     hasPlayThreadStarted = 0;
-
-     ffmpeg_printf(10, "terminating\n");
+    ffmpeg_printf(10, "terminating\n");
 }
 
 /* **************************** */
@@ -931,7 +936,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 			char error[512];
 
 			ffmpeg_err("avformat_open_input failed %d (%s)\n", err, filename);
-			av_strerror(err, error, 512);
+			av_strerror(err, error, sizeof error);
 			ffmpeg_err("Cause: %s\n", error);
 
 			return cERR_CONTAINER_FFMPEG_OPEN;
@@ -1291,11 +1296,21 @@ static int container_ffmpeg_stop(Context_t *context) {
 	
 	if (isContainerRunning)
 	{
+		ffmpeg_err( "FFMPEGThread still running, ffmpeg cleanup might crash enigma!\n");
+	}
+
+        if (0 == trylock(FILENAME, __FUNCTION__,__LINE__))
+	{
 		if (avContext != NULL) {
 			avformat_close_input(avContext);
 			avContext = NULL;
 		}
 		avformat_network_deinit();
+		unlock(FILENAME, __FUNCTION__,__LINE__);
+	}
+	else
+	{
+		ffmpeg_err( "Could not aquire the lock, we'll leak avformat resources.\n");
 	}
 
 	hasPlayThreadStarted = 0;
@@ -1357,7 +1372,7 @@ static int container_ffmpeg_seek_rel(Context_t *context, off_t pos, long long in
 	if (sec < 0)
 		seek_target_flag |= AVSEEK_FLAG_BACKWARD;
 
-	getMutex(FILENAME, __FUNCTION__,__LINE__);
+	lock(FILENAME, __FUNCTION__,__LINE__);
 
 	ffmpeg_printf(10, "iformat->flags %d\n", avContext->iformat->flags);
 	if (avContext->iformat->flags & AVFMT_TS_DISCONT)
@@ -1376,7 +1391,7 @@ static int container_ffmpeg_seek_rel(Context_t *context, off_t pos, long long in
 		if (pos < 0)
 		{
 			ffmpeg_err("end of file reached\n");
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			return cERR_CONTAINER_FFMPEG_END_OF_FILE;
 		}
 
@@ -1385,11 +1400,11 @@ static int container_ffmpeg_seek_rel(Context_t *context, off_t pos, long long in
 		if (container_ffmpeg_seek_bytes(pos) < 0)
 		{
 			ffmpeg_err( "Error seeking\n");
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			return cERR_CONTAINER_FFMPEG_ERR;
 		}
 
-		releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+		unlock(FILENAME, __FUNCTION__,__LINE__);
 		return pos;
 	}
 	else
@@ -1404,19 +1419,19 @@ static int container_ffmpeg_seek_rel(Context_t *context, off_t pos, long long in
 
 		if (av_seek_frame(avContext, current->Id, seek_target, seek_target_flag) < 0) {
 			ffmpeg_err( "Error seeking\n");
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			return cERR_CONTAINER_FFMPEG_ERR;
 		}
 
 		if (sec <= 0)
 		{
 			ffmpeg_err("end of file reached\n");
-			releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+			unlock(FILENAME, __FUNCTION__,__LINE__);
 			return cERR_CONTAINER_FFMPEG_END_OF_FILE;
 		}
 	}
 
-	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+	unlock(FILENAME, __FUNCTION__,__LINE__);
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
@@ -1459,7 +1474,7 @@ static int container_ffmpeg_seek(Context_t *context, float sec, int absolute) {
 	if (sec < 0)
 		seek_target_flag |= AVSEEK_FLAG_BACKWARD;
 
-	getMutex(FILENAME, __FUNCTION__,__LINE__);
+	lock(FILENAME, __FUNCTION__,__LINE__);
 
 	ffmpeg_printf(10, "iformat->flags %d\n", avContext->iformat->flags);
 
@@ -1513,7 +1528,7 @@ static int container_ffmpeg_seek(Context_t *context, float sec, int absolute) {
 	do_seek_target_seconds = 1;
     }
 
-	releaseMutex(FILENAME, __FUNCTION__,__LINE__);
+	unlock(FILENAME, __FUNCTION__,__LINE__);
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
