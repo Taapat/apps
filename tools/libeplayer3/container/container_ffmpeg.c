@@ -729,8 +729,8 @@ static void FFMPEGThread(Context_t *context) {
 							unsigned int i;
 
 							ffmpeg_printf(0, "format %d\n", sub.format);
-							ffmpeg_printf(0, "start_display_time %d\n", sub.start_display_time);
-							ffmpeg_printf(0, "end_display_time %d\n", sub.end_display_time);
+							ffmpeg_printf(0, "start_display_time %d\n", sub.start_display_time*1000);
+							ffmpeg_printf(0, "end_display_time %d\n", sub.end_display_time*1000);
 							ffmpeg_printf(0, "num_rects %d\n", sub.num_rects);
 							ffmpeg_printf(0, "pts %lld\n", sub.pts);
 
@@ -1296,7 +1296,7 @@ static int container_ffmpeg_stop(Context_t *context) {
 	if (0 == trylock(FILENAME, __FUNCTION__,__LINE__))
 	{
 		if (avContext != NULL) {
-			avformat_close_input(avContext);
+			avformat_close_input(&avContext);
 			avContext = NULL;
 		}
 		avformat_network_deinit();
@@ -1664,13 +1664,15 @@ static int Command(void  *_context, ContainerCmd_t command, void * argument)
 {
 	Context_t  *context = (Context_t*) _context;
 	int ret = cERR_CONTAINER_FFMPEG_NO_ERROR;
+	char * FILENAME = NULL;
+	double length = 0;
 
 	ffmpeg_printf(50, "Command %d\n", command);
 
 	switch(command)
 	{
 		case CONTAINER_INIT:
-			char * FILENAME = (char *)argument;
+			FILENAME = (char *)argument;
 			ret = container_ffmpeg_init(context, FILENAME);
 			break;
 		case CONTAINER_PLAY: 
@@ -1686,7 +1688,6 @@ static int Command(void  *_context, ContainerCmd_t command, void * argument)
 			ret = container_ffmpeg_seek(context, (float)*((float*)argument), -1);
 			break;
 		case CONTAINER_LENGTH:
-			double length = 0;
 			ret = container_ffmpeg_get_length(context, &length);
 			*((double*)argument) = (double)length;
 			break;
