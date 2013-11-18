@@ -372,7 +372,7 @@ static void ASSThread(Context_t *context) {
             //       ich hoffe dadurch gehen keine subtitle verloren, wenn die playPts
             //       durch den sleep verschlafen wird. Besser wäre es den nächsten
             //       subtitel zeitpunkt zu bestimmen und solange zu schlafen.
-            usleep(10000);
+            usleep(1000);
 
             getMutex(__LINE__);
 	    checkRegions(writer);

@@ -1,4 +1,5 @@
 /*
+							
  * Container handling for all stream's handled by ffmpeg
  * konfetti 2010; based on code from crow
  *
@@ -270,7 +271,7 @@ long long int calcPts(AVStream* stream, int64_t pts)
 	else if (avContext->start_time == AV_NOPTS_VALUE)
 		pts = 90000.0 * (double)pts * av_q2d(stream->time_base);
 	else
-		pts = 90000.0 * (double)pts * av_q2d(stream->time_base) - 90000.0 * avContext->start_time / AV_TIME_BASE;
+		pts = 90000.0 * ((double)pts * av_q2d(stream->time_base) - avContext->start_time / AV_TIME_BASE);
 
 	if (pts & 0x8000000000000000ull)
 		pts = INVALID_PTS_VALUE;
@@ -477,16 +478,16 @@ static void FFMPEGThread(Context_t *context) {
 				if ((currentVideoPts > latestPts) && (currentVideoPts != INVALID_PTS_VALUE))
 					latestPts = currentVideoPts;
 
-				avOut.data		 = packet.data;
-				avOut.len		 = packet.size;
-				avOut.pts		 = pts;
+				avOut.data	 = packet.data;
+				avOut.len	 = packet.size;
+				avOut.pts	 = pts;
 				avOut.extradata  = videoTrack->extraData;
 				avOut.extralen	 = videoTrack->extraSize;
 				avOut.frameRate  = videoTrack->frame_rate;
 				avOut.timeScale  = videoTrack->TimeScale;
-				avOut.width		 = videoTrack->width;
+				avOut.width	 = videoTrack->width;
 				avOut.height	 = videoTrack->height;
-				avOut.type		 = OUTPUT_TYPE_VIDEO;
+				avOut.type	 = OUTPUT_TYPE_VIDEO;
 
 				if (context->output->video->Write(context, &avOut) < 0) {
 					ffmpeg_err("writing data to video device failed\n");
@@ -635,7 +636,7 @@ static void FFMPEGThread(Context_t *context) {
 						avOut.extralen	 = sizeof(extradata);
 						avOut.frameRate  = 0;
 						avOut.timeScale  = 0;
-						avOut.width		 = 0;
+						avOut.width	 = 0;
 						avOut.height	 = 0;
 						avOut.type		 = OUTPUT_TYPE_AUDIO;
 
@@ -655,9 +656,9 @@ static void FFMPEGThread(Context_t *context) {
 					avOut.extralen	 = audioTrack->aacbuflen;
 					avOut.frameRate  = 0;
 					avOut.timeScale  = 0;
-					avOut.width		 = 0;
+					avOut.width	 = 0;
 					avOut.height	 = 0;
-					avOut.type		 = OUTPUT_TYPE_AUDIO;
+					avOut.type	 = OUTPUT_TYPE_AUDIO;
 
 					if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
 					{
@@ -666,16 +667,16 @@ static void FFMPEGThread(Context_t *context) {
 				}
 				else
 				{
-					avOut.data		 = packet.data;
-					avOut.len		 = packet.size;
-					avOut.pts		 = pts;
+					avOut.data	 = packet.data;
+					avOut.len	 = packet.size;
+					avOut.pts	 = pts;
 					avOut.extradata  = NULL;
 					avOut.extralen	 = 0;
 					avOut.frameRate  = 0;
 					avOut.timeScale  = 0;
-					avOut.width		 = 0;
+					avOut.width	 = 0;
 					avOut.height	 = 0;
-					avOut.type		 = OUTPUT_TYPE_AUDIO;
+					avOut.type	 = OUTPUT_TYPE_AUDIO;
 
 					if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
 					{
@@ -729,8 +730,8 @@ static void FFMPEGThread(Context_t *context) {
 							unsigned int i;
 
 							ffmpeg_printf(0, "format %d\n", sub.format);
-							ffmpeg_printf(0, "start_display_time %d\n", sub.start_display_time*1000);
-							ffmpeg_printf(0, "end_display_time %d\n", sub.end_display_time*1000);
+							ffmpeg_printf(0, "start_display_time %d\n", sub.start_display_time);
+							ffmpeg_printf(0, "end_display_time %d\n", sub.end_display_time);
 							ffmpeg_printf(0, "num_rects %d\n", sub.num_rects);
 							ffmpeg_printf(0, "pts %lld\n", sub.pts);
 
@@ -757,29 +758,28 @@ static void FFMPEGThread(Context_t *context) {
 
 							ffmpeg_printf(10, "videoPts %lld\n", currentVideoPts);
 
-							data.data	   = packet.data;
-							data.len	   = packet.size;
-							data.extradata = subtitleTrack->extraData;
-							data.extralen  = subtitleTrack->extraSize;
-							data.pts	   = pts;
-							data.duration  = duration;
+							data.data	= packet.data;
+							data.len	= packet.size;
+							data.extradata 	= subtitleTrack->extraData;
+							data.extralen	= subtitleTrack->extraSize;
+							data.pts	= pts;
+							data.duration	= duration;
 
 							context->container->assContainer->Command(context, CONTAINER_DATA, &data);
 						}
 						else
 						{
 							/* hopefully native text ;) */
-
 							unsigned char* line = text_to_ass((char *)packet.data,pts/90,duration);
 							ffmpeg_printf(50,"text line is %s\n",(char *)packet.data);
 							ffmpeg_printf(50,"Sub line is %s\n",line);
 							ffmpeg_printf(20, "videoPts %lld %f\n", currentVideoPts,currentVideoPts/90000.0);
 							SubtitleData_t data;
-							data.data	   = line;
-							data.len	   = strlen((char*)line);
+							data.data   = line;
+							data.len   = strlen((char*)line);
 							data.extradata = (unsigned char *) DEFAULT_ASS_HEAD;
 							data.extralen  = strlen(DEFAULT_ASS_HEAD);
-							data.pts	   = pts;
+							data.pts   = pts;
 							data.duration  = duration;
 
 							context->container->assContainer->Command(context, CONTAINER_DATA, &data);
@@ -907,10 +907,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 
 	if(strstr(filename, "http://") == filename)
 	{
-		avContext->max_analyze_duration = 1000;
-		AVDictionary *avio_opts = NULL;
-		//av_dict_set(&avio_opts, "timeout", "200000", 0); //20sec
-		if ((err = avformat_open_input(&avContext, filename, NULL, &avio_opts)) != 0)
+		if ((err = avformat_open_input(&avContext, filename, NULL, 0)) != 0)
 		{
 			char error[512];
 
@@ -918,10 +915,10 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 			av_strerror(err, error,  sizeof error);
 			ffmpeg_err("Cause: %s\n", error);
 
-			if(avio_opts != NULL) av_dict_free(&avio_opts);
 			return cERR_CONTAINER_FFMPEG_OPEN;
 		}
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
+		avContext->max_analyze_duration = 0;
 	}
 	else
 	{	 
@@ -935,9 +932,11 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 
 			return cERR_CONTAINER_FFMPEG_OPEN;
 		}
-		avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
+		if (context->playback->noprobe)
+			avContext->max_analyze_duration = 1;
 	}
 
+	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
 	avContext->flags |= AVFMT_FLAG_GENPTS;
 
 	ffmpeg_printf(20, "find_streaminfo\n");
@@ -1009,19 +1008,17 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 				ffmpeg_printf(10, "CODEC_TYPE_VIDEO %d\n",stream->codec->codec_type);
 
 				if (encoding != NULL) {
-					track.type			 = eTypeES;
-					track.version		 = version;
+					track.type		= eTypeES;
+					track.version		= version;
+					track.width		= stream->codec->width;
+					track.height		= stream->codec->height;
+					track.extraData		= stream->codec->extradata;
+					track.extraSize		= stream->codec->extradata_size;
 
-					track.width			 = stream->codec->width;
-					track.height		 = stream->codec->height;
+					track.frame_rate	= stream->r_frame_rate.num;
 
-					track.extraData		 = stream->codec->extradata;
-					track.extraSize		 = stream->codec->extradata_size;
-
-					track.frame_rate	 = stream->r_frame_rate.num;
-
-					track.aacbuf		 = 0;
-					track.have_aacheader = -1;
+					track.aacbuf		= 0;
+					track.have_aacheader	= -1;
 
 					double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
 
@@ -1047,10 +1044,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					ffmpeg_printf(10, "frame_rate %d\n", track.frame_rate);
 					ffmpeg_printf(10, "TimeScale %d\n", track.TimeScale);
 
-					track.Name		= "und";
+					track.Name	= "und";
 					track.Encoding	= encoding;
 					track.stream	= stream;
-					track.Id		= stream->id;
+					track.Id	= stream->id;
 
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
@@ -1060,11 +1057,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
 					}
 
-					if (context->manager->video)
-						if (context->manager->video->Command(context, MANAGER_ADD, &track) < 0) {
-							/* konfetti: fixme: is this a reason to return with error? */
-							ffmpeg_err("failed to add track %d\n", n);
-						}
+					if (context->manager->video && context->manager->video->Command(context, MANAGER_ADD, &track) < 0) {
+						/* konfetti: fixme: is this a reason to return with error? */
+						ffmpeg_err("failed to add track %d\n", n);
+					}
 
 				}
 				else {
@@ -1076,7 +1072,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 				if (encoding != NULL) {
 					AVDictionaryEntry *lang;
-					track.type			 = eTypeES;
+					track.type = eTypeES;
 
 					lang = av_dict_get(stream->metadata, "language", NULL, 0);
 
@@ -1084,12 +1080,12 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					ffmpeg_printf(10, "Language %s\n", track.Name);
 
-					track.Encoding		 = encoding;
-					track.stream		 = stream;
+					track.Encoding		= encoding;
+					track.stream		= stream;
 					track.Id		= stream->id;
-					track.duration		 = (double)stream->duration * av_q2d(stream->time_base) * 1000.0;
-					track.aacbuf		 = 0;
-					track.have_aacheader = -1;
+					track.duration		= (double)stream->duration * av_q2d(stream->time_base) * 1000.0;
+					track.aacbuf		= 0;
+					track.have_aacheader	= -1;
 
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
@@ -1128,9 +1124,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 			case AVMEDIA_TYPE_SUBTITLE:
 				{
 					AVDictionaryEntry *lang;
-
 					ffmpeg_printf(10, "CODEC_TYPE_SUBTITLE %d\n",stream->codec->codec_type);
-
 					lang = av_dict_get(stream->metadata, "language", NULL, 0);
 
 					track.Name = lang ? lang->value : "und";
@@ -1145,7 +1139,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.aacbuf		 = 0;
 					track.have_aacheader = -1;
 
-					track.width			 = -1; /* will be filled online from videotrack */
+					track.width		 = -1; /* will be filled online from videotrack */
 					track.height		 = -1; /* will be filled online from videotrack */
 
 					track.extraData		 = stream->codec->extradata;
