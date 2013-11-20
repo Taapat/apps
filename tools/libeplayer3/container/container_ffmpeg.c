@@ -898,7 +898,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	avcodec_register_all();
 	av_register_all();
 	avformat_network_init();
-	av_log_set_level( AV_LOG_DEBUG );
+	//av_log_set_level( AV_LOG_DEBUG );
 
 	context->playback->abortRequested = 0;
 	avContext = avformat_alloc_context();
