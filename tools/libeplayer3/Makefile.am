@@ -19,14 +19,14 @@ libeplayer3_la_SOURCES =  \
 AM_CFLAGS = -Wall -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 \
 -D_LARGEFILE64_SOURCE
 
-libeplayer3_la_LIBADD = -lpthread -lavformat -lavcodec -lavutil -lswresample -lz -lass -lm -lpng
+libeplayer3_la_LIBADD = -lpthread -lavformat -lavcodec -lavutil -lswresample
 
 bin_PROGRAMS = eplayer3 meta
 eplayer3_SOURCES = tools/eplayer2.c
-eplayer3_LDADD =  -leplayer3 -lpthread -lass -lm -lpng
+eplayer3_LDADD =  -leplayer3 -lpthread
 
 meta_SOURCES = tools/meta.c
-meta_LDADD =  -leplayer3 -lpthread -lass -lm -lpng
+meta_LDADD =  -leplayer3 -lpthread
 
 libeplayerincludedir =$(includedir)/libeplayer
 
