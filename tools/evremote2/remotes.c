@@ -28,7 +28,6 @@ int selectRemote(Context_t  *context, eBoxType type) {
         if (AvailableRemoteControls[i]->Type == type) {
             context->r = AvailableRemoteControls[i];
             return 0;
-            break;
         }
 
     return -1;
