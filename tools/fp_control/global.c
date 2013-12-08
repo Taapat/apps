@@ -62,6 +62,7 @@ static time_t read_e2_timers(time_t curTime)
 		}
 		else
 			printf(" - Done\n");
+		fclose(fd);
 	}
 	else
 		printf(" - Error reading %s\n", E2WAKEUPTIME);
@@ -133,6 +134,7 @@ static time_t read_neutrino_timers(time_t curTime)
 			}
 		}
 		printf(" - Done\n");
+		fclose(fd);
 	}
 	else
 		printf(" - Error reading %s\n", NEUTRINO_TIMERS);
