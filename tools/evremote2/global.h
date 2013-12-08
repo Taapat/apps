@@ -14,7 +14,7 @@
 #define INPUT_RELEASE 0
 
 typedef enum {Unknown, Spark} eBoxType;
-typedef enum {RemoteControl, FrontPanel} eKeyType;
+typedef enum {eKeyRemoteControl, eKeyFrontPanel} eKeyType;
 
 typedef struct Context_s {
   void* /* RemoteControl_t */  *r; /* instance data */
