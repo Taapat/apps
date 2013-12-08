@@ -1080,11 +1080,11 @@ static int Command(void  *_context, OutputCmd_t command, void * argument) {
         break;
     }
     case OUTPUT_FASTFORWARD: {
-        return LinuxDvbFastForward(context, (char*)argument);
+        ret = LinuxDvbFastForward(context, (char*)argument);
         break;
     }
     case OUTPUT_REVERSE: {
-        return LinuxDvbReverse(context, (char*)argument);
+        ret = LinuxDvbReverse(context, (char*)argument);
         break;
     }
     case OUTPUT_AVSYNC: {
@@ -1108,15 +1108,15 @@ static int Command(void  *_context, OutputCmd_t command, void * argument) {
         break;
     }
     case OUTPUT_SLOWMOTION: {
-        return LinuxDvbSlowMotion(context, (char*)argument);
+        ret = LinuxDvbSlowMotion(context, (char*)argument);
         break;
     }
     case OUTPUT_AUDIOMUTE: {
-        return LinuxDvbAudioMute(context, (char*)argument);
+        ret = LinuxDvbAudioMute(context, (char*)argument);
         break;
     }
     case OUTPUT_DISCONTINUITY_REVERSE: {
-        return LinuxDvbReverseDiscontinuity(context, (int*)argument);
+        ret = LinuxDvbReverseDiscontinuity(context, (int*)argument);
         break;
     }
     case OUTPUT_GET_FRAME_COUNT: {
