@@ -234,7 +234,7 @@ int main (int argc, char **argv)
 		while (fgets(buf, BUFFERSIZE, fv4)) {
 			sscanf(buf, " inet addr:%s  Bcast:%s  Mask:%[^\n]", (char *) &address, (char *) &broadcast, (char *) &netmask);
 		}
-		fclose(fv4);
+		pclose(fv4);
 	}
 
 	FILE* fv5 = popen("/sbin/route -n", "r");
@@ -244,7 +244,7 @@ int main (int argc, char **argv)
 		while (fgets(buf, BUFFERSIZE, fv5)) {
 			sscanf(buf, "%s %[0-9.]", (char *) &null, (char *) &gateway);
 		}
-		fclose(fv5);
+		pclose(fv5);
 	}
 
   FILE* fv6 = fopen(MOUNTS_FILE, "r"); //Root-Server IP ermitteln, falls nfsboot
@@ -274,9 +274,10 @@ int main (int argc, char **argv)
 	strcpy(message2, "");
 	if (delay)
 		sprintf(message2, "%s %s .... ", info[LOAD][id], ladename);
+	else
+		message2[0] = '\0';
 
 	char message[BIGBUFFERSIZE];
-	strcpy(message, "");
 	sprintf(message,
 		"\n\n\n\n"
 		"\t\t    ---------- Image Information ----------\n\n"
