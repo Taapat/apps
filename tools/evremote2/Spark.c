@@ -168,19 +168,19 @@ static int pShutdown(Context_t* context ) {
 }
 
 static int pRead(Context_t* context ) {
-	const int           cSize = 128;
+	const int           cSize = 129;
 	char                vBuffer[cSize];
 	char                keyname[cSize];
 	int                 updown;
 	int                 vCurrentCode  = -1;
 	int                 rc;
 
-	memset(vBuffer, 0, 128);
-    //wait for new command
-    rc = read (context->fd, vBuffer, cSize);
+	//wait for new command
+	rc = read (context->fd, vBuffer, sizeof (vBuffer));
 	if(rc <= 0)return -1;
+	vBuffer[rc] = '\0';
 
-	printf("[RCU] key: %s\n", &vBuffer[0]);
+	printf("[RCU] key: %s\n", vBuffer);
 
 	if (2 == sscanf(vBuffer, "%*x %x %s %*s", &updown, keyname)) {
 		vCurrentCode = lookupKey(keyname);
@@ -204,22 +204,18 @@ static int pNotification(Context_t* context, const int cOn) {
 
     if(cOn)
     {
-       ioctl_fd = open("/dev/vfd", O_RDONLY);
-       vfd_data.u.icon.icon_nr = 35;
        vfd_data.u.icon.on = 1;
-       ioctl(ioctl_fd, VFDICONDISPLAYONOFF, &vfd_data);
-       close(ioctl_fd);
     }
     else
     {
        usleep(100000);
-       ioctl_fd = open("/dev/vfd", O_RDONLY);
-       vfd_data.u.icon.icon_nr = 35;
        vfd_data.u.icon.on = 0;
-       ioctl(ioctl_fd, VFDICONDISPLAYONOFF, &vfd_data);
-       close(ioctl_fd);
     }
 
+    ioctl_fd = open("/dev/vfd", O_RDONLY);
+    vfd_data.u.icon.icon_nr = 35;
+    ioctl(ioctl_fd, VFDICONDISPLAYONOFF, &vfd_data);
+    close(ioctl_fd);
     return 0;
 }
 
