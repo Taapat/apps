@@ -76,7 +76,7 @@ if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); 
 
 #define ASS_RING_SIZE 5
 
-#define ASS_FONT "/usr/share/fonts/FreeSans.ttf"
+#define ASS_FONT "/usr/share/fonts/md_khmurabi_10.ttf"
 
 /* ***************************** */
 /* Types                         */
