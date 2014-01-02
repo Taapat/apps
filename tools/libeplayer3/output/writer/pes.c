@@ -67,7 +67,7 @@
 /* Functions                     */
 /* ***************************** */
 
-int InsertVideoPrivateDataHeader(unsigned char *data, int payload_size)
+int InsertVideoPrivateDataHeader(unsigned char *data, unsigned int payload_size)
 {
     BitPacker_t ld2 = {data, 0, 32};
     int         i;
@@ -86,7 +86,7 @@ int InsertVideoPrivateDataHeader(unsigned char *data, int payload_size)
 
 }
 
-int InsertPesHeader (unsigned char *data, int size, unsigned char stream_id, unsigned long long int pts, int pic_start_code)
+int InsertPesHeader (unsigned char *data, unsigned int size, unsigned char stream_id, unsigned long long int pts, int pic_start_code)
 {
     BitPacker_t ld2 = {data, 0, 32};
 
