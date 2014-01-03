@@ -89,13 +89,13 @@ int InsertVideoPrivateDataHeader(unsigned char *data, unsigned int payload_size)
 int InsertPesHeader (unsigned char *data, unsigned int size, unsigned char stream_id, unsigned long long int pts, int pic_start_code)
 {
     BitPacker_t ld2 = {data, 0, 32};
-
+/*
     if (size > MAX_PES_PACKET_SIZE)
     {
-        printf("%s: Packet size %d bigger than %dK eeeekkkkk\n",__FUNCTION__, size, (int)(MAX_PES_PACKET_SIZE/1024));
+        printf("%s: Packet size %u bigger than %uK eeeekkkkk\n",__FUNCTION__, size, (unsigned int)(MAX_PES_PACKET_SIZE/1024));
         size = 0; // unbounded
     }
-
+*/
     PutBits(&ld2,0x0  ,8);
     PutBits(&ld2,0x0  ,8);
     PutBits(&ld2,0x1  ,8);  // Start Code
