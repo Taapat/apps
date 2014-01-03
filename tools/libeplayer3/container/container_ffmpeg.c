@@ -350,6 +350,7 @@ static void FFMPEGThread(Context_t *context) {
 
 	SwrContext *swr = NULL;
 	AVFrame *decoded_frame = NULL;
+	int out_sample_rate = 44100;
 	int out_channels = 2;
 	uint64_t out_channel_layout = AV_CH_LAYOUT_STEREO;
 
@@ -565,22 +566,25 @@ static void FFMPEGThread(Context_t *context) {
 							continue;
 
 						int e;
-						int out_sample_rate = 44100;
 						if (!swr) {
 							int in_rate = c->sample_rate;
+							// rates in descending order
+							int rates[] = { 192000, 176400, 96000, 88200, 48000, 44100, 0 };
+							int i=0;
+							// find the next equal or smallest rate
+							while(rates[i] && in_rate < rates[i]) i++;
+							if (rates[i]) out_sample_rate = rates[i];
 							swr = swr_alloc();
 							out_channels = c->channels;
 							if (c->channel_layout == 0) {
 								// FIXME -- need to guess, looks pretty much like a bug in the FFMPEG WMA decoder
 								c->channel_layout = AV_CH_LAYOUT_STEREO;
-							}
-
-							out_channel_layout = c->channel_layout;
 							// player2 won't play mono
-							if (out_channel_layout == AV_CH_LAYOUT_MONO) {
+							} else if (out_channel_layout == AV_CH_LAYOUT_MONO) {
 								out_channel_layout = AV_CH_LAYOUT_STEREO;
 								out_channels = 2;
 							}
+							out_channel_layout = c->channel_layout;
 
 							av_opt_set_int(swr, "in_channel_layout",	c->channel_layout,	0);
 							av_opt_set_int(swr, "out_channel_layout",	out_channel_layout,	0);
@@ -596,6 +600,7 @@ static void FFMPEGThread(Context_t *context) {
 										(int)c->channel_layout, (int)out_channel_layout, c->sample_rate, out_sample_rate, c->sample_fmt, AV_SAMPLE_FMT_S16);
 								swr_free(&swr);
 								swr = NULL;
+								continue;
 							}
 						}
 
