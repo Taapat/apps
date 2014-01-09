@@ -213,9 +213,9 @@ static char* Codec2Encoding(AVCodecContext *codec, int* version)
 			return "A_AC3";
 		case AV_CODEC_ID_DTS:
 			return "A_DTS";
-#if 0
 		case AV_CODEC_ID_AAC:
 			return "A_AAC";
+#if 0
 		case AV_CODEC_ID_WMAV1:
 		case AV_CODEC_ID_WMAV2:
 		case AV_CODEC_ID_WMAPRO:
@@ -1103,8 +1103,9 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
 					}
 
-					if(!strncmp(encoding, "A_IPCM", 6))
+					if(!strncmp(encoding, "A_IPCM", 6) || (!strncmp(filename, "http://", 7) && !strncmp(encoding, "A_AAC", 5)))
 					{
+						track.Encoding = "A_IPCM"; // force "A_IPCM" for http streams, aac does not work for some reason
 						track.inject_as_pcm = 1;
 						ffmpeg_printf(10, " Handle inject_as_pcm = %d\n", track.inject_as_pcm);
 
