@@ -1,4 +1,3 @@
-
 #ifndef GLOBAL_H_
 #define GLOBAL_H_
 
@@ -13,7 +12,7 @@
 #define INPUT_PRESS 1
 #define INPUT_RELEASE 0
 
-typedef enum {Unknown, Spark} eBoxType;
+typedef enum {Unknown, Spark, Hl101} eBoxType;
 typedef enum {eKeyRemoteControl, eKeyFrontPanel} eKeyType;
 
 typedef struct Context_s {
