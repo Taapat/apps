@@ -1,4 +1,3 @@
-
 #ifndef REMOTES_H_
 #define REMOTES_H_
 
@@ -26,9 +25,11 @@ typedef struct RemoteControl_s {
 } RemoteControl_t;
 
 extern RemoteControl_t Spark_RC;
+extern RemoteControl_t Hl101_RC;
 
 static RemoteControl_t * AvailableRemoteControls[] = {
 	&Spark_RC,
+	&Hl101_RC,
 	NULL
 };
 
