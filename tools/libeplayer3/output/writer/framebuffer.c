@@ -100,13 +100,9 @@ static int reset()
 
 static int writeData(void* _call)
 {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
     unsigned char a;
-    int x,y;
+    int y;
     int res = 0;
-    unsigned char* dst;
     
     WriterFBCallData_t* call = (WriterFBCallData_t*) _call;
     
@@ -168,9 +164,9 @@ static int writeData(void* _call)
         {
             for (x = 0; x < call->Width; x++)
             {                
-		//uint32_t c = colortable[src[x]];
-		//if (c)
-		//	*dst = c;
+		uint32_t c = colortable[src[x]];
+		if (c)
+			*dst = c;
 		
 		
 		k = ((unsigned)src[x]) * opacity / 255;

@@ -49,7 +49,7 @@ typedef struct Track_s {
     void               *  extraData;
     int		              extraSize;
 
-    uint8_t*              aacbuf;
+    char *                aacbuf;
     unsigned int          aacbuflen;
     int                   have_aacheader;
 

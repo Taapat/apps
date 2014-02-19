@@ -618,7 +618,7 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.data		 = packet_data;
 				avOut.len		 = packet_size;
 				avOut.pts		 = pts;
-				avOut.extradata  = (unsigned char *)audioTrack->aacbuf;
+					avOut.extradata  = (unsigned char *)audioTrack->aacbuf;
 				avOut.extralen	 = audioTrack->aacbuflen;
 				avOut.frameRate  = 0;
 				avOut.timeScale  = 0;
@@ -1280,7 +1280,6 @@ static int container_ffmpeg_seek(Context_t * context __attribute__ ((unused)), f
 		seek_sec_abs = sec, seek_sec_rel = 0.0;
 	else
 		seek_sec_abs = -1.0, seek_sec_rel = sec;
-		int64_t seek_target = av_rescale_q(sec * AV_TIME_BASE, AV_TIME_BASE_Q, ((AVStream*) current->stream)->time_base);
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
