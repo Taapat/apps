@@ -316,9 +316,28 @@ void *detectKeyUpTask(void* dummy)
 
 int getModel()
 {
+    int         vFd             = -1;
+    const int   cSize           = 128;
+    char        vName[129]      = "Unknown";
+    int         vLen            = -1;
     eBoxType    vBoxType        = Spark;
-    printf("vBoxType: %d\n", vBoxType);
 
+    vFd = open("/proc/stb/info/model", O_RDONLY);
+    vLen = read (vFd, vName, cSize);
+    close(vFd);
+
+    if(vLen > 0) 
+    {
+        vName[vLen-1] = '\0';
+        printf("Model: %s\n", vName);
+
+        if(!strncasecmp(vName,"hl101", 5))
+        {
+            vBoxType = Hl101;
+        }
+    }
+
+    printf("vBoxType: %d\n", vBoxType);
     return vBoxType;
 }
 
