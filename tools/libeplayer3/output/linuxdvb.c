@@ -683,8 +683,6 @@ int LinuxDvbClear(Context_t  *context __attribute__((unused)), char * type) {
 int LinuxDvbPts(Context_t  *context __attribute__((unused)), unsigned long long int* pts) {
     int ret = cERR_LINUXDVB_ERROR;
     
-    *((unsigned long long int *)pts)=(unsigned long long int)sCURRENT_PTS;
-    return cERR_LINUXDVB_NO_ERROR;
     linuxdvb_printf(50, "\n");
 
     //!!!! These dvb commands are not supportde on sh4, at least on amiko alien
@@ -936,8 +934,6 @@ static int Write(void  *_context, void* _out)
             call.Width        = out->width;
             call.Height       = out->height;
             call.Version      = 0; // is unsingned char
-
-            sCURRENT_PTS = out->pts;
 
             if (videoWriter->writeData)
                 res = videoWriter->writeData(&call);
