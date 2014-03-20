@@ -1118,15 +1118,15 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 						if (sample_index > 4) { // I do not know if it is the right way, but works on all files which I tested
 							ffmpeg_printf(10,"aac sample index %d, use A_IPCM\n", sample_index);
 							encoding = "A_IPCM";
+							track.Encoding = "A_IPCM";
 						}
 						else {
 							ffmpeg_printf(10,"aac sample index %d, use A_AAC\n", sample_index);
 						}
 					}
 
-					if(!strncmp(encoding, "A_IPCM", 6) || (!strncmp(filename, "http://", 7) && !strncmp(encoding, "A_AAC", 5)))
+					if(!strncmp(encoding, "A_IPCM", 6))
 					{
-						track.Encoding = "A_IPCM"; // force "A_IPCM" for http streams, aac does not work for some reason
 						track.inject_as_pcm = 1;
 						ffmpeg_printf(10, " Handle inject_as_pcm = %d\n", track.inject_as_pcm);
 
