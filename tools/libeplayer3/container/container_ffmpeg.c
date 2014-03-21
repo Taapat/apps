@@ -438,13 +438,15 @@ static void FFMPEGThread(Context_t *context) {
 		if ((avres = av_read_frame(avContext, &packet)) == 0 )
 		{
 			long long int pts;
+			uint8_t *packet_data = packet.data;
+			int packet_size = packet.size;
 			Track_t * videoTrack = NULL;
 			Track_t * audioTrack = NULL;
 			Track_t * subtitleTrack = NULL;
 			Track_t * dvbsubtitleTrack = NULL;
 			Track_t * teletextTrack = NULL;
 
-			context->playback->readCount += packet.size;
+			context->playback->readCount += packet_size;
 
 			int pid = avContext->streams[packet.stream_index]->id;
 
@@ -463,7 +465,7 @@ static void FFMPEGThread(Context_t *context) {
 			if (context->manager->teletext->Command(context, MANAGER_GET_TRACK, &teletextTrack) < 0)
 				ffmpeg_err("error getting teletext track\n");
 
-			ffmpeg_printf(200, "packet.size %d - index %d\n", packet.size, pid);
+			ffmpeg_printf(200, "packet_size %d - index %d\n", packet_size, pid);
 
 			if (videoTrack && (videoTrack->Id == pid)) {
 				currentVideoPts = videoTrack->pts = pts = calcPts(videoTrack->stream, packet.pts);
@@ -471,8 +473,8 @@ static void FFMPEGThread(Context_t *context) {
 				if ((currentVideoPts > latestPts) && (currentVideoPts != INVALID_PTS_VALUE))
 					latestPts = currentVideoPts;
 
-				avOut.data	 = packet.data;
-				avOut.len	 = packet.size;
+				avOut.data	 = packet_data;
+				avOut.len	 = packet_size;
 				avOut.pts	 = pts;
 				avOut.extradata  = videoTrack->extraData;
 				avOut.extralen	 = videoTrack->extraSize;
@@ -501,8 +503,8 @@ static void FFMPEGThread(Context_t *context) {
 					extradata.uBitsPerSample = 16;
 					extradata.bLittleEndian = 1;
 
-					avOut.data		 = packet.data;
-					avOut.len		 = packet.size;
+					avOut.data		 = packet_data;
+					avOut.len		 = packet_size;
 					avOut.pts		 = pts;
 					avOut.extradata  = (unsigned char *) &extradata;
 					avOut.extralen	 = sizeof(extradata);
@@ -535,7 +537,7 @@ static void FFMPEGThread(Context_t *context) {
 						context->output->Command(context, OUTPUT_PLAY, NULL);
 					}
 
-					while(packet.size > 0)
+					while(packet_size > 0)
 					{
 						int got_frame = 0;
 						if (!decoded_frame) {
@@ -552,8 +554,8 @@ static void FFMPEGThread(Context_t *context) {
 							break;
 						}
 
-						packet.data += len;
-						packet.size -= len;
+						packet_data += len;
+						packet_size -= len;
 
 						if (!got_frame)
 							continue;
@@ -650,8 +652,8 @@ static void FFMPEGThread(Context_t *context) {
 				{
 					ffmpeg_printf(200,"write audio aac\n");
 
-					avOut.data		 = packet.data;
-					avOut.len		 = packet.size;
+					avOut.data		 = packet_data;
+					avOut.len		 = packet_size;
 					avOut.pts		 = pts;
 					avOut.extradata  = audioTrack->aacbuf;
 					avOut.extralen	 = audioTrack->aacbuflen;
@@ -668,8 +670,8 @@ static void FFMPEGThread(Context_t *context) {
 				}
 				else
 				{
-					avOut.data	 = packet.data;
-					avOut.len	 = packet.size;
+					avOut.data	 = packet_data;
+					avOut.len	 = packet_size;
 					avOut.pts	 = pts;
 					avOut.extradata  = NULL;
 					avOut.extralen	 = 0;
@@ -706,7 +708,7 @@ static void FFMPEGThread(Context_t *context) {
 					/*Hellmaster1024 if the duration is not stored in packet.duration or
 					  packet.convergence_duration we need to calculate it any other way, for SSA it is stored in
 					  the Text line*/
-					duration = getDurationFromSSALine(packet.data);
+					duration = getDurationFromSSALine(packet_data);
 				} else {
 					/* no clue yet */
 				}
@@ -759,8 +761,8 @@ static void FFMPEGThread(Context_t *context) {
 
 							ffmpeg_printf(10, "videoPts %lld\n", currentVideoPts);
 
-							data.data	= packet.data;
-							data.len	= packet.size;
+							data.data	= packet_data;
+							data.len	= packet_size;
 							data.extradata 	= subtitleTrack->extraData;
 							data.extralen	= subtitleTrack->extraSize;
 							data.pts	= pts;
@@ -771,8 +773,8 @@ static void FFMPEGThread(Context_t *context) {
 						else
 						{
 							/* hopefully native text ;) */
-							unsigned char* line = text_to_ass((char *)packet.data,pts/90,duration);
-							ffmpeg_printf(50,"text line is %s\n",(char *)packet.data);
+							unsigned char* line = text_to_ass((char *)packet_data,pts/90,duration);
+							ffmpeg_printf(50,"text line is %s\n",(char *)packet_data);
 							ffmpeg_printf(50,"Sub line is %s\n",line);
 							ffmpeg_printf(20, "videoPts %lld %f\n", currentVideoPts,currentVideoPts/90000.0);
 							SubtitleData_t data;
@@ -794,8 +796,8 @@ static void FFMPEGThread(Context_t *context) {
 
 				ffmpeg_printf(200, "DvbSubTitle index = %d\n",pid);
 
-				avOut.data		 = packet.data;
-				avOut.len		 = packet.size;
+				avOut.data		 = packet_data;
+				avOut.len		 = packet_size;
 				avOut.pts		 = pts;
 				avOut.extradata  = NULL;
 				avOut.extralen	 = 0;
@@ -816,8 +818,8 @@ static void FFMPEGThread(Context_t *context) {
 
 				ffmpeg_printf(200, "TeleText index = %d\n",pid);
 
-				avOut.data		 = packet.data;
-				avOut.len		 = packet.size;
+				avOut.data		 = packet_data;
+				avOut.len		 = packet_size;
 				avOut.pts		 = pts;
 				avOut.extradata  = NULL;
 				avOut.extralen	 = 0;
