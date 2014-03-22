@@ -857,6 +857,8 @@ static void FFMPEGThread(Context_t *context) {
 	if (decoded_frame)
 		avcodec_free_frame(&decoded_frame);
 
+	if (context->playback)
+		context->playback->abortPlayback = 1;
 	hasPlayThreadStarted = 0;
 
 	ffmpeg_printf(10, "terminating\n");
@@ -870,7 +872,7 @@ static int terminating = 0;
 static int interrupt_cb(void *ctx)
 {
 	PlaybackHandler_t *p = (PlaybackHandler_t *)ctx;
-	return p->abortRequested;
+	return p->abortPlayback | p->abortRequested;
 }
 
 
@@ -904,6 +906,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	//av_log_set_level( AV_LOG_DEBUG );
 
 	context->playback->abortRequested = 0;
+	context->playback->abortPlayback = 0;
 	avContext = avformat_alloc_context();
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
@@ -1113,7 +1116,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					{
 						track.inject_as_pcm = 1;
 						ffmpeg_printf(10, " Handle inject_as_pcm = %d\n", track.inject_as_pcm);
-
 						AVCodec *codec = avcodec_find_decoder(stream->codec->codec_id);
 
 						if(codec != NULL && !avcodec_open2(stream->codec, codec, NULL))
