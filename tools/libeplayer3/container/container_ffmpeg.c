@@ -847,8 +847,6 @@ static void FFMPEGThread(Context_t *context) {
 		unlock(FILENAME, __FUNCTION__,__LINE__);
 	}/* while */
 
-	isContainerRunning = 0;
-
 	if (context && context->playback && context->output && context->playback->abortRequested)
 		context->output->Command(context, OUTPUT_CLEAR, NULL);		  // Freeing the allocated buffer for softdecoding
 
@@ -898,6 +896,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		ffmpeg_err("ups already running?\n");
 		return cERR_CONTAINER_FFMPEG_RUNNING;
 	}
+	isContainerRunning = 1;
 
 	/* initialize ffmpeg */
 	avcodec_register_all();
@@ -919,6 +918,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		av_strerror(err, error, sizeof error);
 		ffmpeg_err("Cause: %s\n", error);
 
+		isContainerRunning = 0;
 		return cERR_CONTAINER_FFMPEG_OPEN;
 	}
 	if(strstr(filename, "http://") == filename)
@@ -944,13 +944,13 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		 * until other works are done and we can prove this.
 		 */
 		avformat_close_input(&avContext);
+		isContainerRunning = 0;
 		return cERR_CONTAINER_FFMPEG_STREAM;
 #endif
 	}
 
 	terminating = 0;
 	latestPts = 0;
-	isContainerRunning = 1;
 	int res = container_ffmpeg_update_tracks(context, filename, 1);
 	return res;
 }
@@ -1298,17 +1298,13 @@ static int container_ffmpeg_stop(Context_t *context) {
 		usleep(100000);
 	}
 
-	if (isContainerRunning)
-	{
-		ffmpeg_err( "FFMPEGThread still running, ffmpeg cleanup might crash enigma!\n");
-	}
-
 	if (0 == trylock(FILENAME, __FUNCTION__,__LINE__))
 	{
 		if (avContext != NULL) {
 			avformat_close_input(&avContext);
 			avContext = NULL;
 		}
+		isContainerRunning = 0;
 		avformat_network_deinit();
 		unlock(FILENAME, __FUNCTION__,__LINE__);
 	}
