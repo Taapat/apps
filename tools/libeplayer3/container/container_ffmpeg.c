@@ -908,35 +908,24 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
 
+	if ((err = avformat_open_input(&avContext, filename, NULL, 0)) != 0)
+	{
+		char error[512];
+
+		ffmpeg_err("avformat_open_input failed %d (%s)\n", err, filename);
+		av_strerror(err, error, sizeof error);
+		ffmpeg_err("Cause: %s\n", error);
+
+		return cERR_CONTAINER_FFMPEG_OPEN;
+	}
 	if(strstr(filename, "http://") == filename)
 	{
-		if ((err = avformat_open_input(&avContext, filename, NULL, 0)) != 0)
-		{
-			char error[512];
-
-			ffmpeg_err("avformat_open_input failed %d (%s)\n", err, filename);
-			av_strerror(err, error,  sizeof error);
-			ffmpeg_err("Cause: %s\n", error);
-
-			return cERR_CONTAINER_FFMPEG_OPEN;
-		}
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
 		avContext->max_analyze_duration = 0;
 	}
-	else
-	{	 
-		if ((err = avformat_open_input(&avContext, filename, NULL, 0)) != 0)
-		{
-			char error[512];
-
-			ffmpeg_err("avformat_open_input failed %d (%s)\n", err, filename);
-			av_strerror(err, error, sizeof error);
-			ffmpeg_err("Cause: %s\n", error);
-
-			return cERR_CONTAINER_FFMPEG_OPEN;
-		}
-		if (context->playback->noprobe)
-			avContext->max_analyze_duration = 1;
+	else if (context->playback->noprobe) {
+		ffmpeg_printf(10, "noprobe\n");
+		avContext->max_analyze_duration = 1;
 	}
 
 	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
