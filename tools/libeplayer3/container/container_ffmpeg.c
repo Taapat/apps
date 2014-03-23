@@ -61,7 +61,7 @@
 
 #ifdef FFMPEG_DEBUG
 
-static short debug_level = 10;
+static short debug_level = 20;
 
 #define ffmpeg_printf(level, fmt, x...) do { \
 	if (debug_level >= level) printf("[%s:%s] " fmt, FILENAME, __FUNCTION__, ## x); } while (0)
@@ -634,7 +634,7 @@ static void FFMPEGThread(Context_t *context) {
 						avOut.data		 = output;
 						avOut.len		 = out_buffsize;
 
-						avOut.pts		 = pts;
+						avOut.pts		 = videoTrack ? pts : 0;
 						avOut.extradata  = (unsigned char*)&extradata;
 						avOut.extralen	 = sizeof(extradata);
 						avOut.frameRate  = 0;
