@@ -952,6 +952,24 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	terminating = 0;
 	latestPts = 0;
 	int res = container_ffmpeg_update_tracks(context, filename, 1);
+
+	unsigned int n, found_av = 0;
+	for (n = 0; n < avContext->nb_streams; n++) {
+		AVStream *stream = avContext->streams[n];
+		switch (stream->codec->codec_type) {
+			case AVMEDIA_TYPE_AUDIO:
+			case AVMEDIA_TYPE_VIDEO:
+				found_av = 1;
+			default:
+				break;
+		}
+	}
+	if (!found_av) {
+		avformat_close_input(&avContext);
+		isContainerRunning = 0;
+		return cERR_CONTAINER_FFMPEG_STREAM;
+	}
+
 	return res;
 }
 
