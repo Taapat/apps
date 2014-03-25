@@ -514,7 +514,6 @@ static void FFMPEGThread(Context_t *context) {
 					int len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &packet);
 					if (len < 0) {
 						//fprintf(stderr, "avcodec_decode_audio4: %d\n", len);
-						restart_audio_resampling = 1;
 						break;
 					}
 
