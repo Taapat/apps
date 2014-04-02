@@ -289,7 +289,6 @@ static void FFMPEGThread(Context_t *context) {
 
 	hasPlayThreadStarted = 1;
 
-	off_t lastSeek = -1;
 	long long int currentVideoPts = -1, currentAudioPts = -1, showtime = 0, bofcount = 0;
 	AudioVideoOut_t avOut;
 
@@ -980,10 +979,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.extraSize		= stream->codec->extradata_size;
 
 					track.frame_rate	= stream->r_frame_rate.num;
-
+#if 0
 					track.aacbuf		= 0;
 					track.have_aacheader	= -1;
-
+#endif
 					double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
 
 					ffmpeg_printf(10, "frame_rate = %f\n", frame_rate);
@@ -1047,10 +1046,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.Encoding		= encoding;
 					track.stream		= stream;
 					track.Id		= stream->id;
-					track.duration		= (double)stream->duration * av_q2d(stream->time_base) * 1000.0;
+#if 0
 					track.aacbuf		= 0;
 					track.have_aacheader	= -1;
-
+#endif
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
 						track.duration = (double) avContext->duration / 1000.0;
@@ -1119,11 +1118,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.Encoding		 = encoding;
 					track.stream		 = stream;
 					track.Id			 = stream->id;
-					track.duration		 = (double)stream->duration * av_q2d(stream->time_base) * 1000.0;
-
+#if 0
 					track.aacbuf		 = 0;
 					track.have_aacheader = -1;
-
+#endif
 					track.width		 = -1; /* will be filled online from videotrack */
 					track.height		 = -1; /* will be filled online from videotrack */
 
@@ -1425,6 +1423,11 @@ static int Command(void  *_context, ContainerCmd_t command, void * argument)
 	double length = 0;
 
 	ffmpeg_printf(50, "Command %d\n", command);
+
+	if (command != CONTAINER_INIT && !avContext)
+		return cERR_CONTAINER_FFMPEG_ERR;
+	if (command == CONTAINER_INIT && avContext)
+		return cERR_CONTAINER_FFMPEG_ERR;
 
 	switch(command)
 	{
