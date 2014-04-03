@@ -849,7 +849,6 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	isContainerRunning = 1;
 
 	/* initialize ffmpeg */
-	avcodec_register_all();
 	av_register_all();
 	avformat_network_init();
 	//av_log_set_level( AV_LOG_DEBUG );
@@ -860,7 +859,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
 
-	if ((err = avformat_open_input(&avContext, filename, NULL, 0)) != 0)
+	if ((err = avformat_open_input(&avContext, filename, NULL, NULL)) < 0)
 	{
 		char error[512];
 
@@ -871,6 +870,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		isContainerRunning = 0;
 		return cERR_CONTAINER_FFMPEG_OPEN;
 	}
+
 	if(strstr(filename, "http://") == filename)
 	{
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
