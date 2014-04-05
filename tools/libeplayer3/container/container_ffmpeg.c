@@ -492,7 +492,7 @@ static void FFMPEGThread(Context_t *context) {
 						swr = NULL;
 					}
 					if (decoded_frame) {
-						avcodec_free_frame(&decoded_frame);
+						av_frame_free(&decoded_frame);
 						decoded_frame = NULL;
 					}
 					context->output->Command(context, OUTPUT_CLEAR, NULL);
@@ -503,12 +503,12 @@ static void FFMPEGThread(Context_t *context) {
 				{
 					int got_frame = 0;
 					if (!decoded_frame) {
-						if (!(decoded_frame = avcodec_alloc_frame())) {
+						if (!(decoded_frame = av_frame_alloc())) {
 							fprintf(stderr, "out of memory\n");
 							exit(1);
 						}
 					} else
-						avcodec_get_frame_defaults(decoded_frame);
+						av_frame_unref(decoded_frame);
 
 					int len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &packet);
 					if (len < 0) {
@@ -803,7 +803,7 @@ static void FFMPEGThread(Context_t *context) {
 	if (swr)
 		swr_free(&swr);
 	if (decoded_frame)
-		avcodec_free_frame(&decoded_frame);
+		av_frame_free(&decoded_frame);
 
 	if (context->playback)
 		context->playback->abortPlayback = 1;
