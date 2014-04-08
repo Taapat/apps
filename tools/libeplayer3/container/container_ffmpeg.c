@@ -610,6 +610,7 @@ static void FFMPEGThread(Context_t *context) {
 					av_freep(&output);
 				}
 			}
+#if 0
 			else if (audioTrack->have_aacheader == 1)
 			{
 				ffmpeg_printf(200,"write audio aac\n");
@@ -630,6 +631,7 @@ static void FFMPEGThread(Context_t *context) {
 					ffmpeg_err("(aac) writing data to audio device failed\n");
 				}
 			}
+#endif
 			else
 			{
 				avOut.data	 = packet_data;
