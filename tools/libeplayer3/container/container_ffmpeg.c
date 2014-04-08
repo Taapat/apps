@@ -449,7 +449,7 @@ static void FFMPEGThread(Context_t *context) {
 			if (context->output->video->Write(context, &avOut) < 0) {
 				ffmpeg_err("writing data to video device failed\n");
 			}
-		} else if (audioTrack && (audioTrack->Id == pid)) {
+		} else if (audioTrack && (audioTrack->Id == pid) && !context->playback->BackWard) {
 			currentAudioPts = audioTrack->pts = pts = calcPts(audioTrack->stream, packet.pts);
 
 			if ((currentAudioPts > latestPts) && (!videoTrack))
@@ -476,7 +476,7 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.height	 = 0;
 				avOut.type		 = OUTPUT_TYPE_AUDIO;
 
-				if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
+				if (context->output->audio->Write(context, &avOut) < 0)
 				{
 					ffmpeg_err("(raw pcm) writing data to audio device failed\n");
 				}
@@ -605,7 +605,7 @@ static void FFMPEGThread(Context_t *context) {
 					avOut.height	 = 0;
 					avOut.type		 = OUTPUT_TYPE_AUDIO;
 
-					if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
+					if (context->output->audio->Write(context, &avOut) < 0)
 						ffmpeg_err("writing data to audio device failed\n");
 					av_freep(&output);
 				}
@@ -625,7 +625,7 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.height	 = 0;
 				avOut.type	 = OUTPUT_TYPE_AUDIO;
 
-				if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
+				if (context->output->audio->Write(context, &avOut) < 0)
 				{
 					ffmpeg_err("(aac) writing data to audio device failed\n");
 				}
@@ -643,7 +643,7 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.height	 = 0;
 				avOut.type	 = OUTPUT_TYPE_AUDIO;
 
-				if (!context->playback->BackWard && context->output->audio->Write(context, &avOut) < 0)
+				if (context->output->audio->Write(context, &avOut) < 0)
 				{
 					ffmpeg_err("writing data to audio device failed\n");
 				}
