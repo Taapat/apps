@@ -435,16 +435,18 @@ static void FFMPEGThread(Context_t *context) {
 			if ((currentVideoPts > latestPts) && (currentVideoPts != INVALID_PTS_VALUE))
 				latestPts = currentVideoPts;
 
-			avOut.data	 = packet_data;
-			avOut.len	 = packet_size;
-			avOut.pts	 = pts;
+			avOut.data	     = packet_data;
+			avOut.len	     = packet_size;
+			avOut.pts	     = pts;
 			avOut.extradata  = videoTrack->extraData;
 			avOut.extralen	 = videoTrack->extraSize;
 			avOut.frameRate  = videoTrack->frame_rate;
 			avOut.timeScale  = videoTrack->TimeScale;
-			avOut.width	 = videoTrack->width;
+			avOut.width	     = videoTrack->width;
 			avOut.height	 = videoTrack->height;
-			avOut.type	 = OUTPUT_TYPE_VIDEO;
+			avOut.type	     = OUTPUT_TYPE_VIDEO;
+			avOut.stream     = videoTrack->stream;
+			avOut.avfc       = avContext;
 
 			if (context->output->video->Write(context, &avOut) < 0) {
 				ffmpeg_err("writing data to video device failed\n");
@@ -475,6 +477,8 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.width		 = 0;
 				avOut.height	 = 0;
 				avOut.type		 = OUTPUT_TYPE_AUDIO;
+				avOut.stream     = audioTrack->stream;
+				avOut.avfc       = avContext;
 
 				if (context->output->audio->Write(context, &avOut) < 0)
 				{
@@ -595,15 +599,16 @@ static void FFMPEGThread(Context_t *context) {
 
 					avOut.data		 = output;
 					avOut.len		 = out_buffsize;
-
 					avOut.pts		 = videoTrack ? pts : 0;
 					avOut.extradata  = (unsigned char*)&extradata;
 					avOut.extralen	 = sizeof(extradata);
 					avOut.frameRate  = 0;
 					avOut.timeScale  = 0;
-					avOut.width	 = 0;
+					avOut.width	     = 0;
 					avOut.height	 = 0;
 					avOut.type		 = OUTPUT_TYPE_AUDIO;
+					avOut.stream     = audioTrack->stream;
+					avOut.avfc       = avContext;
 
 					if (context->output->audio->Write(context, &avOut) < 0)
 						ffmpeg_err("writing data to audio device failed\n");
@@ -622,9 +627,11 @@ static void FFMPEGThread(Context_t *context) {
 				avOut.extralen	 = audioTrack->aacbuflen;
 				avOut.frameRate  = 0;
 				avOut.timeScale  = 0;
-				avOut.width	 = 0;
+				avOut.width	     = 0;
 				avOut.height	 = 0;
-				avOut.type	 = OUTPUT_TYPE_AUDIO;
+				avOut.type	     = OUTPUT_TYPE_AUDIO;
+				avOut.stream     = audioTrack->stream;
+				avOut.avfc       = avContext;
 
 				if (context->output->audio->Write(context, &avOut) < 0)
 				{
@@ -634,16 +641,18 @@ static void FFMPEGThread(Context_t *context) {
 #endif
 			else
 			{
-				avOut.data	 = packet_data;
-				avOut.len	 = packet_size;
-				avOut.pts	 = pts;
+				avOut.data	     = packet_data;
+				avOut.len	     = packet_size;
+				avOut.pts	     = pts;
 				avOut.extradata  = NULL;
 				avOut.extralen	 = 0;
 				avOut.frameRate  = 0;
 				avOut.timeScale  = 0;
-				avOut.width	 = 0;
+				avOut.width	     = 0;
 				avOut.height	 = 0;
-				avOut.type	 = OUTPUT_TYPE_AUDIO;
+				avOut.type	     = OUTPUT_TYPE_AUDIO;
+				avOut.stream     = audioTrack->stream;
+				avOut.avfc       = avContext;
 
 				if (context->output->audio->Write(context, &avOut) < 0)
 				{
@@ -767,6 +776,8 @@ static void FFMPEGThread(Context_t *context) {
 			avOut.width		 = 0;
 			avOut.height	 = 0;
 			avOut.type		 = OUTPUT_TYPE_DVBSUBTITLE;
+			avOut.stream     = dvbsubtitleTrack->stream;
+			avOut.avfc       = avContext;
 
 			if (context->output->dvbsubtitle->Write(context, &avOut) < 0)
 			{
@@ -789,6 +800,8 @@ static void FFMPEGThread(Context_t *context) {
 			avOut.width		 = 0;
 			avOut.height	 = 0;
 			avOut.type		 = OUTPUT_TYPE_TELETEXT;
+			avOut.stream     = teletextTrack->stream;
+			avOut.avfc       = avContext;
 
 			if (context->output->teletext->Write(context, &avOut) < 0)
 			{
@@ -968,6 +981,9 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 		 */
 		memset(&track, 0, sizeof(track));
 
+		track.avfc = avContext;
+		track.stream = stream;
+
 		switch (stream->codec->codec_type) {
 			case AVMEDIA_TYPE_VIDEO:
 				ffmpeg_printf(10, "CODEC_TYPE_VIDEO %d\n",stream->codec->codec_type);
@@ -1009,10 +1025,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					ffmpeg_printf(10, "frame_rate %d\n", track.frame_rate);
 					ffmpeg_printf(10, "TimeScale %d\n", track.TimeScale);
 
-					track.Name	= "und";
+					track.Name	    = "und";
 					track.Encoding	= encoding;
-					track.stream	= stream;
-					track.Id	= stream->id;
+					track.avfc      = avContext;
+					track.Id	    = stream->id;
 
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
@@ -1045,8 +1061,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					ffmpeg_printf(10, "Language %s\n", track.Name);
 
-					track.Encoding		= encoding;
-					track.stream		= stream;
+					track.Encoding  = encoding;
 					track.Id		= stream->id;
 #if 0
 					track.aacbuf		= 0;
@@ -1118,7 +1133,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					ffmpeg_printf(10, "Language %s\n", track.Name);
 
 					track.Encoding		 = encoding;
-					track.stream		 = stream;
 					track.Id			 = stream->id;
 #if 0
 					track.aacbuf		 = 0;
