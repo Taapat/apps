@@ -211,6 +211,5 @@ static WriterCaps_t divx_caps = {
 struct Writer_s WriterVideoDIVX = {
     &reset,
     &writeData,
-    NULL,
     &divx_caps
 };

@@ -171,6 +171,5 @@ static WriterCaps_t caps_vorbis = {
 struct Writer_s WriterAudioVORBIS = {
     &reset,
     &writeData,
-    NULL,
     &caps_vorbis
 };

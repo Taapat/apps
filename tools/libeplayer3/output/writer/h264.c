@@ -344,35 +344,6 @@ static int writeData(void* _call)
     h264_printf (10, "< len %d\n", len);
     return len;
 }
-
-static int writeReverseData(void* _call)
-{
-    WriterAVCallData_t* call = (WriterAVCallData_t*) _call;
-
-    h264_printf(10, "\n");
-
-    if (call == NULL)
-    {
-        h264_err("call data is NULL...\n");
-        return 0;
-    }
-
-    h264_printf(10, "VideoPts %lld\n", call->Pts);
-
-    if ((call->data == NULL) || (call->len <= 0))
-    {
-        h264_err("NULL Data. ignoring...\n");
-        return 0;
-    }
-
-    if (call->fd < 0)
-    {
-        h264_err("file pointer < 0. ignoring ...\n");
-        return 0;
-    }
-
-    return 0;
-}
 /* ***************************** */
 /* Writer  Definition            */
 /* ***************************** */
@@ -387,6 +358,5 @@ static WriterCaps_t caps = {
 struct Writer_s WriterVideoH264 = {
     &reset,
     &writeData,
-    &writeReverseData,
     &caps
 };

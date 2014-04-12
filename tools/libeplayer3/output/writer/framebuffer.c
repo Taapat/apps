@@ -208,6 +208,5 @@ static WriterCaps_t caps = {
 struct Writer_s WriterFramebuffer = {
     &reset,
     &writeData,
-    NULL,
     &caps
 };
