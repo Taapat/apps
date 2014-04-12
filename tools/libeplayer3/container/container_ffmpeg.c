@@ -162,26 +162,6 @@ static char* Codec2Encoding(AVCodecContext *codec, int* version)
 			return "A_AC3";
 		case AV_CODEC_ID_DTS:
 			return "A_DTS";
-#if 0
-		case AV_CODEC_ID_AAC:
-			return "A_AAC";
-		case AV_CODEC_ID_WMAV1:
-		case AV_CODEC_ID_WMAV2:
-		case AV_CODEC_ID_WMAPRO:
-			return "A_WMA";
-		case AV_CODEC_ID_MLP:
-			return "A_MLP";
-		case AV_CODEC_ID_RA_144:
-			return "A_RMA";
-		case AV_CODEC_ID_RA_288:
-			return "A_RMA";
-		case AV_CODEC_ID_VORBIS:
-			return "A_VORBIS";
-		case AV_CODEC_ID_FLAC:
-			return return "A_FLAC";
-		case AV_CODEC_ID_PCM_S16LE:
-			return "A_PCM";
-#endif
 			/* subtitle */
 		case AV_CODEC_ID_SSA:
 			return "S_TEXT/ASS"; /* Hellmaster1024: seems to be ASS instead of SSA */
@@ -457,34 +437,7 @@ static void FFMPEGThread(Context_t *context) {
 				latestPts = currentAudioPts;
 
 			ffmpeg_printf(200, "AudioTrack index = %d\n",pid);
-			if (audioTrack->inject_raw_pcm == 1){
-				ffmpeg_printf(200,"write audio raw pcm\n");
-
-				pcmPrivateData_t extradata;
-				extradata.uNoOfChannels = ((AVStream*) audioTrack->stream)->codec->channels;
-				extradata.uSampleRate = ((AVStream*) audioTrack->stream)->codec->sample_rate;
-				extradata.uBitsPerSample = 16;
-				extradata.bLittleEndian = 1;
-
-				avOut.data		 = packet_data;
-				avOut.len		 = packet_size;
-				avOut.pts		 = pts;
-				avOut.extradata  = (unsigned char *) &extradata;
-				avOut.extralen	 = sizeof(extradata);
-				avOut.frameRate  = 0;
-				avOut.timeScale  = 0;
-				avOut.width		 = 0;
-				avOut.height	 = 0;
-				avOut.type		 = OUTPUT_TYPE_AUDIO;
-				avOut.stream     = audioTrack->stream;
-				avOut.avfc       = avContext;
-
-				if (context->output->audio->Write(context, &avOut) < 0)
-				{
-					ffmpeg_err("(raw pcm) writing data to audio device failed\n");
-				}
-			}
-			else if (audioTrack->inject_as_pcm == 1)
+			if (audioTrack->inject_as_pcm == 1)
 			{
 				AVCodecContext *c = ((AVStream*)(audioTrack->stream))->codec;
 
@@ -614,30 +567,6 @@ static void FFMPEGThread(Context_t *context) {
 					av_freep(&output);
 				}
 			}
-#if 0
-			else if (audioTrack->have_aacheader == 1)
-			{
-				ffmpeg_printf(200,"write audio aac\n");
-
-				avOut.data		 = packet_data;
-				avOut.len		 = packet_size;
-				avOut.pts		 = pts;
-					avOut.extradata  = (unsigned char *)audioTrack->aacbuf;
-				avOut.extralen	 = audioTrack->aacbuflen;
-				avOut.frameRate  = 0;
-				avOut.timeScale  = 0;
-				avOut.width	     = 0;
-				avOut.height	 = 0;
-				avOut.type	     = OUTPUT_TYPE_AUDIO;
-				avOut.stream     = audioTrack->stream;
-				avOut.avfc       = avContext;
-
-				if (context->output->audio->Write(context, &avOut) < 0)
-				{
-					ffmpeg_err("(aac) writing data to audio device failed\n");
-				}
-			}
-#endif
 			else
 			{
 				avOut.data	     = packet_data;
@@ -994,12 +923,8 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.height		= stream->codec->height;
 					track.extraData		= stream->codec->extradata;
 					track.extraSize		= stream->codec->extradata_size;
-
 					track.frame_rate	= stream->r_frame_rate.num;
-#if 0
-					track.aacbuf		= 0;
-					track.have_aacheader	= -1;
-#endif
+
 					double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
 
 					ffmpeg_printf(10, "frame_rate = %f\n", frame_rate);
@@ -1062,10 +987,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					track.Encoding  = encoding;
 					track.Id		= stream->id;
-#if 0
-					track.aacbuf		= 0;
-					track.have_aacheader	= -1;
-#endif
+
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
 						track.duration = (double) avContext->duration / 1000.0;
@@ -1093,7 +1015,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 							ffmpeg_err("failed to add track %d\n", n);
 						}
 					}
-
 				}
 				else {
 					ffmpeg_err("codec type audio but codec unknown %d\n", stream->codec->codec_id);
@@ -1111,10 +1032,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					track.Encoding		 = encoding;
 					track.Id			 = stream->id;
-#if 0
-					track.aacbuf		 = 0;
-					track.have_aacheader = -1;
-#endif
+
 					track.width		 = -1; /* will be filled online from videotrack */
 					track.height		 = -1; /* will be filled online from videotrack */
 

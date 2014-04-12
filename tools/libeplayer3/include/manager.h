@@ -51,14 +51,9 @@ typedef struct Track_s {
     void               *  extraData;
     int		              extraSize;
 
-    char *                aacbuf;
-    unsigned int          aacbuflen;
-    int                   have_aacheader;
-
     /* If player2 or the elf do not support decoding of audio codec set this.
      * AVCodec is than used for softdecoding and stream will be injected as PCM */
     int                   inject_as_pcm;
-    int                   inject_raw_pcm;
 
     int			  pending;
 } Track_t;

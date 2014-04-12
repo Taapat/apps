@@ -108,7 +108,6 @@ void copyTrack(Track_t* to, Track_t* from)
     to->Name     = (from->Name     != NULL)? strdup(from->Name)    : strdup("Unknown");
     to->Encoding = (from->Encoding != NULL)? strdup(from->Encoding): strdup("Unknown");
     to->language = (from->language != NULL)? strdup(from->language): strdup("Unknown");
-    to->aacbuf   = (from->aacbuf   != NULL)? strdup(from->aacbuf)  : strdup("Unknown");
 }
 
 void freeTrack(Track_t* track)
@@ -126,11 +125,6 @@ void freeTrack(Track_t* track)
     if (track->language != NULL) {
         free(track->language);
         track->language = NULL;
-    }
-
-    if (track->aacbuf != NULL) {
-        free(track->aacbuf);
-        track->aacbuf = NULL;
     }
 }
 
