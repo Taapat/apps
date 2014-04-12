@@ -303,7 +303,6 @@ static WriterCaps_t caps_pcm = {
 struct Writer_s WriterAudioPCM = {
 	&reset,
 	&writeData,
-	NULL,
 	&caps_pcm
 };
 

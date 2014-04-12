@@ -162,7 +162,6 @@ static WriterCaps_t caps = {
 struct Writer_s WriterVideoMPEG2 = {
     &reset,
     &writeData,
-    NULL,
     &caps
 };
 
