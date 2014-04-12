@@ -113,7 +113,7 @@ static float seek_sec_abs = -1.0, seek_sec_rel = 0.0;
 /* MISC Functions				 */
 /* ***************************** */
 
-static char* Codec2Encoding(AVCodecContext *codec, int* version)
+static char* Codec2Encoding(AVCodecContext *codec)
 {
 	fprintf(stderr, "Codec ID: %ld (%.8lx)\n", (long)codec->codec_id, (long)codec->codec_id);
 	switch (codec->codec_id)
@@ -140,13 +140,8 @@ static char* Codec2Encoding(AVCodecContext *codec, int* version)
 		case AV_CODEC_ID_MSMPEG4V3:
 			return "V_MSCOMP";
 		case AV_CODEC_ID_WMV1:
-			*version = 1;
-			return "V_WMV";
 		case AV_CODEC_ID_WMV2:
-			*version = 2;
-			return "V_WMV";
 		case AV_CODEC_ID_WMV3:
-			*version = 3;
 			return "V_WMV";
 		case AV_CODEC_ID_VC1:
 			return "V_VC1";
@@ -894,15 +889,14 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 	for ( n = 0; n < avContext->nb_streams; n++) {
 		Track_t track;
 		AVStream *stream = avContext->streams[n];
-		int version = 0;
 
-		char* encoding = Codec2Encoding(stream->codec, &version);
+		char* encoding = Codec2Encoding(stream->codec);
 
 		if (!stream->id)
 			stream->id = n;
 
 		if (encoding != NULL)
-			ffmpeg_printf(1, "%d. encoding = %s - version %d\n", stream->id, encoding, version);
+			ffmpeg_printf(1, "%d. encoding = %s\n", stream->id, encoding);
 
 		/* some values in track are unset and therefor copyTrack segfaults.
 		 * so set it by default to NULL!
@@ -917,9 +911,8 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 				ffmpeg_printf(10, "CODEC_TYPE_VIDEO %d\n",stream->codec->codec_type);
 
 				if (encoding != NULL) {
-					track.type		= eTypeES;
-					track.version		= version;
-					track.width		= stream->codec->width;
+					track.type		    = eTypeES;
+					track.width		    = stream->codec->width;
 					track.height		= stream->codec->height;
 					track.extraData		= stream->codec->extradata;
 					track.extraSize		= stream->codec->extradata_size;

@@ -35,7 +35,6 @@ typedef struct Track_s {
     long long int         duration;
     unsigned int          frame_rate;
     unsigned int          TimeScale;
-    int                   version;
     long long int         pts;
 
     /* for later use: */
