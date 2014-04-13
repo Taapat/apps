@@ -803,10 +803,6 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
         ret = PlaybackContinue(context);
         break;
     }
-    case PLAYBACK_TERM: {
-        ret = PlaybackTerminate(context);
-        break;
-    }
     case PLAYBACK_FASTFORWARD: {
         ret = PlaybackFastForward(context,(int*)argument);
         break;
