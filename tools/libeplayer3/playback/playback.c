@@ -583,26 +583,6 @@ static int PlaybackPts(Context_t  *context, unsigned long long int* pts) {
     return ret;
 }
 
-static int PlaybackGetFrameCount(Context_t  *context, unsigned long long int* frameCount) {
-    int ret = cERR_PLAYBACK_NO_ERROR;
-
-    playback_printf(20, "\n");
-
-    *frameCount = 0;
-
-    if (context->playback->isPlaying) {
-        ret = context->output->Command(context, OUTPUT_GET_FRAME_COUNT, frameCount);
-    } else
-    {
-        playback_err("not possible\n");
-        ret = cERR_PLAYBACK_ERROR;
-    }
-
-    playback_printf(20, "exiting with value %d\n", ret);
-
-    return ret;
-}
-
 static int PlaybackLength(Context_t  *context, double* length) {
     int ret = cERR_PLAYBACK_NO_ERROR;
 
@@ -841,10 +821,6 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
     }
     case PLAYBACK_FASTBACKWARD: {
         ret = PlaybackFastBackward(context,(int*)argument);
-        break;
-    }
-    case PLAYBACK_GET_FRAME_COUNT: { // 10
-        ret = PlaybackGetFrameCount(context, (unsigned long long int*)argument);
         break;
     }
     case PLAYBACK_SWITCH_DVBSUBTITLE: {
