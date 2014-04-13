@@ -858,7 +858,7 @@ static int Write(Context_t *context, void* _out)
     
     linuxdvb_printf(20, "DataLength=%u PrivateLength=%u Pts=%llu FrameRate=%f\n", 
                                                     out->len, out->extralen, out->pts, out->frameRate);
-    linuxdvb_printf(20, "type: %d [0 - audio, 1- video, 3-dvbsubtitle, 4-teletext]\n", out->type);
+    linuxdvb_printf(20, "type: %d [0 - audio, 1- video]\n", out->type);
 
     if (OUTPUT_TYPE_VIDEO == out->type) {
         char * Encoding = NULL;

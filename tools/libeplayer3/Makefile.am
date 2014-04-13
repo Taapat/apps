@@ -9,7 +9,7 @@ libeplayer3_la_SOURCES =  \
 	container/container.c container/container_ffmpeg.c container/text_srt.c \
 	container/text_ssa.c container/container_ass.c \
 	manager/manager.c \
-	output/output_subtitle.c output/linuxdvb.c output/output.c output/output_pipe.c \
+	output/output_subtitle.c output/linuxdvb.c output/output.c \
 	playback/playback.c output/writer/writer.c output/writer/wmv.c \
 	output/writer/ac3.c output/writer/divx.c output/writer/pes.c \
 	output/writer/dts.c output/writer/mpeg2.c output/writer/mp3.c output/writer/misc.c \

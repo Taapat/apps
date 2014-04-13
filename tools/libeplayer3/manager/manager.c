@@ -68,8 +68,6 @@ enum TrackType {
     TRACK_TYPE_AUDIO,
     TRACK_TYPE_VIDEO,
     TRACK_TYPE_SUBTITLE,
-    TRACK_TYPE_TELETEXT,
-    TRACK_TYPE_DVBSUBTITLE,
     TRACK_TYPE_MAX
 };
 
@@ -151,8 +149,6 @@ static int ManagerAdd(struct TracksInfo * t, Context_t  *context, Track_t track)
            case TRACK_TYPE_AUDIO: context->playback->isAudio = 1; break;
            case TRACK_TYPE_VIDEO: context->playback->isVideo = 1; break;
            case TRACK_TYPE_SUBTITLE: context->playback->isSubtitle = 1; break;
-           case TRACK_TYPE_TELETEXT: context->playback->isTeletext = 1; break;
-           case TRACK_TYPE_DVBSUBTITLE: context->playback->isDvbSubtitle = 1; break;
            default: break;
         }
     }
@@ -205,8 +201,6 @@ static int ManagerDel(struct TracksInfo * t, Context_t * context) {
        case TRACK_TYPE_AUDIO: context->playback->isAudio = 0; break;
        case TRACK_TYPE_VIDEO: context->playback->isVideo = 0; break;
        case TRACK_TYPE_SUBTITLE: context->playback->isSubtitle = 0; break;
-       case TRACK_TYPE_TELETEXT: context->playback->isTeletext = 0; break;
-       case TRACK_TYPE_DVBSUBTITLE: context->playback->isDvbSubtitle = 0; break;
        default: break;
     }
     t->Current = (TRACK_TYPE_AUDIO==t->Type || TRACK_TYPE_VIDEO==t->Type)? 0: -1;
@@ -317,14 +311,6 @@ static int Command_subtitle(Context_t *context, ManagerCmd_t command, void * arg
     return Command(&tracksInfo[TRACK_TYPE_SUBTITLE], context, command, argument);
 }
 
-static int Command_teletext(Context_t *context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_TELETEXT], context, command, argument);
-}
-
-static int Command_dvbsubtitle(Context_t *context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_DVBSUBTITLE], context, command, argument);
-}
-
 struct Manager_s AudioManager = {
     "Audio",
     &Command_audio,
@@ -343,23 +329,9 @@ struct Manager_s SubtitleManager = {
     NULL
 };
 
-struct Manager_s TeletextManager = {
-    "Teletext",
-    &Command_teletext,
-    NULL
-};
-
-struct Manager_s DvbSubtitleManager = {
-    "DvbSubtitle",
-    &Command_dvbsubtitle,
-    NULL
-};
-
 ManagerHandler_t ManagerHandler = {
     "ManagerHandler",
     &AudioManager,
     &VideoManager,
     &SubtitleManager
-  , &DvbSubtitleManager
-  , &TeletextManager
 };

@@ -373,8 +373,6 @@ static void FFMPEGThread(Context_t *context) {
 		Track_t * videoTrack = NULL;
 		Track_t * audioTrack = NULL;
 		Track_t * subtitleTrack = NULL;
-		Track_t * dvbsubtitleTrack = NULL;
-		Track_t * teletextTrack = NULL;
 
 		context->playback->readCount += packet_size;
 
@@ -388,12 +386,6 @@ static void FFMPEGThread(Context_t *context) {
 
 		if (context->manager->subtitle->Command(context, MANAGER_GET_TRACK, &subtitleTrack) < 0)
 			ffmpeg_err("error getting subtitle track\n");
-
-		if (context->manager->dvbsubtitle->Command(context, MANAGER_GET_TRACK, &dvbsubtitleTrack) < 0)
-			ffmpeg_err("error getting dvb subtitle track\n");
-
-		if (context->manager->teletext->Command(context, MANAGER_GET_TRACK, &teletextTrack) < 0)
-			ffmpeg_err("error getting teletext track\n");
 
 		ffmpeg_printf(200, "packet_size %d - index %d\n", packet_size, pid);
 
@@ -678,53 +670,6 @@ static void FFMPEGThread(Context_t *context) {
 				}
 			} /* duration */
 		}
-		else if (dvbsubtitleTrack && (dvbsubtitleTrack->Id == pid)) {
-			dvbsubtitleTrack->pts = pts = calcPts(dvbsubtitleTrack->stream, packet.pts);
-
-			ffmpeg_printf(200, "DvbSubTitle index = %d\n",pid);
-
-			avOut.data		 = packet_data;
-			avOut.len		 = packet_size;
-			avOut.pts		 = pts;
-			avOut.extradata  = NULL;
-			avOut.extralen	 = 0;
-			avOut.frameRate  = 0;
-			avOut.timeScale  = 0;
-			avOut.width		 = 0;
-			avOut.height	 = 0;
-			avOut.type		 = OUTPUT_TYPE_DVBSUBTITLE;
-			avOut.stream     = dvbsubtitleTrack->stream;
-			avOut.avfc       = avContext;
-
-			if (context->output->dvbsubtitle->Write(context, &avOut) < 0)
-			{
-				//ffmpeg_err("writing data to dvbsubtitle fifo failed\n");
-			}
-		}
-		else if (teletextTrack && teletextTrack->Id == pid)
-		{
-			teletextTrack->pts = pts = calcPts(teletextTrack->stream, packet.pts);
-
-			ffmpeg_printf(200, "TeleText index = %d\n",pid);
-
-			avOut.data		 = packet_data;
-			avOut.len		 = packet_size;
-			avOut.pts		 = pts;
-			avOut.extradata  = NULL;
-			avOut.extralen	 = 0;
-			avOut.frameRate  = 0;
-			avOut.timeScale  = 0;
-			avOut.width		 = 0;
-			avOut.height	 = 0;
-			avOut.type		 = OUTPUT_TYPE_TELETEXT;
-			avOut.stream     = teletextTrack->stream;
-			avOut.avfc       = avContext;
-
-			if (context->output->teletext->Write(context, &avOut) < 0)
-			{
-				//ffmpeg_err("writing data to teletext fifo failed\n");
-			}
-		}
 
 		av_free_packet(&packet);
 	}/* while */
@@ -868,10 +813,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 		context->manager->audio->Command(context, MANAGER_INIT_UPDATE, NULL);
 	//	if (context->manager->subtitle)
 	//		context->manager->subtitle->Command(context, MANAGER_INIT_UPDATE, NULL);
-	if (context->manager->dvbsubtitle)
-		context->manager->dvbsubtitle->Command(context, MANAGER_INIT_UPDATE, NULL);
-	if (context->manager->teletext)
-		context->manager->teletext->Command(context, MANAGER_INIT_UPDATE, NULL);
 
 	ffmpeg_printf(20, "dump format\n");
 	av_dump_format(avContext, 0, filename, 0);
@@ -1041,28 +982,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
 
-					if (stream->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT && context->manager->teletext) {
-						ffmpeg_printf(10, "dvb_teletext\n");
-						int i = 0;
-						AVDictionaryEntry *t = NULL;
-						do {
-							char tmp[30];
-							snprintf(tmp, sizeof(tmp), "teletext_%d", i);
-							t = av_dict_get(stream->metadata, tmp, NULL, 0);
-							if (t) {
-								track.Name = t->value;
-								if (context->manager->teletext->Command(context, MANAGER_ADD, &track) < 0)
-									ffmpeg_err("failed to add teletext track %d\n", n);
-							}
-							i++;
-						} while (t);
-					} else if (stream->codec->codec_id == AV_CODEC_ID_DVB_SUBTITLE && context->manager->dvbsubtitle) {
-						ffmpeg_printf(10, "dvb_subtitle\n");
-						lang = av_dict_get(stream->metadata, "language", NULL, 0);
-						if (context->manager->dvbsubtitle->Command(context, MANAGER_ADD, &track) < 0) {
-							ffmpeg_err("failed to add dvbsubtitle track %d\n", n);
-						}
-					} else if (initial && context->manager->subtitle) {
+					if (initial && context->manager->subtitle) {
 						if (!stream->codec->codec) {
 							stream->codec->codec = avcodec_find_decoder(stream->codec->codec_id);
 							if (!stream->codec->codec)
@@ -1077,7 +997,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 							ffmpeg_err("failed to add subtitle track %d\n", n);
 						}
 					}
-
 					break;
 				}
 			case AVMEDIA_TYPE_UNKNOWN:
@@ -1239,16 +1158,6 @@ static int container_ffmpeg_switch_subtitle(Context_t* context __attribute__((un
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
-static int container_ffmpeg_switch_dvbsubtitle(Context_t* context __attribute__((unused)), int* arg __attribute__((unused)))
-{
-	return cERR_CONTAINER_FFMPEG_NO_ERROR;
-}
-
-static int container_ffmpeg_switch_teletext(Context_t* context __attribute__((unused)), int* arg __attribute__((unused)))
-{
-	return cERR_CONTAINER_FFMPEG_NO_ERROR;
-}
-
 /* konfetti comment: I dont like the mechanism of overwriting
  * the pointer in infostring. This lead in most cases to
  * user errors, like it is in the current version (libeplayer2 <-->e2->servicemp3.cpp)
@@ -1362,12 +1271,6 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 			break;
 		case CONTAINER_LAST_PTS:
 			*((long long int*)argument) = latestPts;
-			break;
-		case CONTAINER_SWITCH_DVBSUBTITLE:
-			ret = container_ffmpeg_switch_dvbsubtitle(context, (int*) argument);
-			break;
-		case CONTAINER_SWITCH_TELETEXT:
-			ret = container_ffmpeg_switch_teletext(context, (int*) argument);
 			break;
 		default:
 			ffmpeg_err("ContainerCmd %d not supported!\n", command);

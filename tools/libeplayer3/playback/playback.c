@@ -179,8 +179,6 @@ static int PlaybackClose(Context_t  *context) {
     context->manager->audio->Command(context, MANAGER_DEL, NULL);
     context->manager->video->Command(context, MANAGER_DEL, NULL);
     context->manager->subtitle->Command(context, MANAGER_DEL, NULL);
-    context->manager->dvbsubtitle->Command(context, MANAGER_DEL, NULL);
-    context->manager->teletext->Command(context, MANAGER_DEL, NULL);
 
     context->playback->isPaused     = 0;
     context->playback->isPlaying    = 0;
@@ -692,48 +690,6 @@ static int PlaybackSwitchSubtitle(Context_t  *context, int* track) {
     return ret;
 }
 
-static int PlaybackSwitchDVBSubtitle(Context_t  *context, int* pid) {
-    int ret = cERR_PLAYBACK_NO_ERROR;
-
-    playback_printf(10, "Track: %d\n", *pid);
-
-    if (context && context->manager && context->manager->dvbsubtitle ) {
-        if (context->manager->dvbsubtitle->Command(context, *pid < 0 ? MANAGER_DEL : MANAGER_SET, pid) < 0) {
-                playback_err("dvbsub manager set track failed\n");
-         	ret = cERR_PLAYBACK_ERROR;
-        }
-    } else
-        playback_err("no dvbsubtitle\n");
-
-    if (*pid < 0)
-	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
-
-    playback_printf(10, "exiting with value %d\n", ret);
-
-    return ret;
-}
-
-static int PlaybackSwitchTeletext(Context_t  *context, int* pid) {
-    int ret = cERR_PLAYBACK_NO_ERROR;
-
-    playback_printf(10, "Track: %d\n", *pid);
-
-    if (context && context->manager && context->manager->teletext ) {
-        if (context->manager->teletext->Command(context, *pid < 0 ? MANAGER_DEL : MANAGER_SET, pid)) {
-                playback_err("ttxsub manager set track failed\n");
-         	ret = cERR_PLAYBACK_ERROR;
-	}
-    } else
-        playback_err("no ttxsubtitle\n");
-
-    if (*pid < 0)
-	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
-
-    playback_printf(10, "exiting with value %d\n", ret);
-
-    return ret;
-}
-
 static int PlaybackInfo(Context_t  *context, char** infoString) {
     int ret = cERR_PLAYBACK_NO_ERROR;
 
@@ -823,14 +779,6 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
         ret = PlaybackFastBackward(context,(int*)argument);
         break;
     }
-    case PLAYBACK_SWITCH_DVBSUBTITLE: {
-        ret = PlaybackSwitchDVBSubtitle(context, (int*)argument);
-	break;
-    }
-    case PLAYBACK_SWITCH_TELETEXT: {
-        ret = PlaybackSwitchTeletext(context, (int*)argument);
-	break;
-    }
     default:
         playback_err("PlaybackCmd %d not supported!\n", command);
         ret = cERR_PLAYBACK_ERROR;
@@ -846,8 +794,6 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
 PlaybackHandler_t PlaybackHandler = {
     "Playback",
     -1,
-    0,
-    0,
     0,
     0,
     0,
