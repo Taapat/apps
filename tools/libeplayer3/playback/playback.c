@@ -831,16 +831,6 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
         ret = PlaybackSwitchTeletext(context, (int*)argument);
 	break;
     }
-    case PLAYBACK_FRAMEBUFFER_LOCK: {
-        context->playback->mayWriteToFramebuffer = 0;
-    	ret = cERR_PLAYBACK_NO_ERROR;
-	break;
-    }
-    case PLAYBACK_FRAMEBUFFER_UNLOCK: {
-        context->playback->mayWriteToFramebuffer = 1;
-    	ret = cERR_PLAYBACK_NO_ERROR;
-	break;
-    }
     default:
         playback_err("PlaybackCmd %d not supported!\n", command);
         ret = cERR_PLAYBACK_ERROR;

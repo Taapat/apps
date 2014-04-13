@@ -31,7 +31,6 @@ typedef struct PlaybackHandler_s {
     unsigned char isSubtitle;
     unsigned char isDvbSubtitle;
     unsigned char isTeletext;
-    unsigned char mayWriteToFramebuffer;
     unsigned char abortRequested;
     unsigned char abortPlayback;
 
