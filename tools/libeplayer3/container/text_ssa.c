@@ -459,8 +459,7 @@ static int SsaDel(Context_t *context) {
     return ret;
 }
 
-static int Command(void  *_context, ContainerCmd_t command, void * argument) {
-    Context_t  *context = (Context_t*) _context;
+static int Command(Context_t *context, ContainerCmd_t command, void * argument) {
     int ret = cERR_SSA_NO_ERROR;
 
     ssa_printf(10, "\n");

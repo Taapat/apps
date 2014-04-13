@@ -881,9 +881,8 @@ static char* audioEncoding = NULL;
 static Writer_t* videoWriter = NULL;
 static Writer_t* audioWriter = NULL;
 
-static int Write(void  *_context, void* _out)
+static int Write(Context_t *context, void* _out)
 {
-    Context_t          *context  = (Context_t  *) _context;
     AudioVideoOut_t    *out      = (AudioVideoOut_t*) _out;
     int                ret       = cERR_LINUXDVB_NO_ERROR;
     int                res       = 0;
@@ -1035,8 +1034,7 @@ static int reset(Context_t  *context)
     return ret;
 }
 
-static int Command(void  *_context, OutputCmd_t command, void * argument) {
-    Context_t* context = (Context_t*) _context;
+static int Command(Context_t *context, OutputCmd_t command, void * argument) {
     int ret = cERR_LINUXDVB_NO_ERROR;
     
     linuxdvb_printf(50, "Command %d\n", command);

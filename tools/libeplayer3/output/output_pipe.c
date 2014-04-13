@@ -346,7 +346,7 @@ static int writePESDataDvbsubtitle(int fd, unsigned char *data, size_t data_len,
     return len;
 }
 
-static int Write(void  *_context __attribute__((unused)), void* _out)
+static int Write(Context_t *context __attribute__((unused)), void* _out)
 {
     AudioVideoOut_t    *out      = (AudioVideoOut_t*) _out;
     int                ret       = cERR_PIPE_NO_ERROR;
@@ -381,15 +381,14 @@ static int Write(void  *_context __attribute__((unused)), void* _out)
     return ret;
 }
 
-static int reset(Context_t  *context __attribute__((unused)))
+static int reset(Context_t *context __attribute__((unused)))
 {
     int ret = cERR_PIPE_NO_ERROR;
 
     return ret;
 }
 
-static int Command(void  *_context, OutputCmd_t command, void * argument) {
-    Context_t* context = (Context_t*) _context;
+static int Command(Context_t *context, OutputCmd_t command, void * argument) {
     int ret = cERR_PIPE_NO_ERROR;
     
     pipe_printf(50, "Command %d\n", command);

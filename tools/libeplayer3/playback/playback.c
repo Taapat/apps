@@ -773,12 +773,10 @@ static int PlaybackInfo(Context_t  *context, char** infoString) {
     return ret;
 }
 
-static int Command(void* _context, PlaybackCmd_t command, void * argument) {
-    Context_t* context = (Context_t*) _context; /* to satisfy compiler */
+static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
     int ret = cERR_PLAYBACK_NO_ERROR;
 
     playback_printf(20, "Command %d\n", command);
-
 
     switch(command) {
     case PLAYBACK_OPEN: {

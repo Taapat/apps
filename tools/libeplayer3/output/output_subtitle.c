@@ -523,8 +523,7 @@ static void* SubtitleThread(void* data) {
 /* Functions                     */
 /* ***************************** */
 
-static int Write(void* _context, void *data) {
-    Context_t  * context = (Context_t  *) _context;
+static int Write(Context_t *context, void *data) {
     char * Encoding = NULL;
     char * Text = NULL;
     SubtitleOut_t * out;
@@ -752,8 +751,7 @@ void subtitle_SignalConnectBuffer(void* data)
     clientData = data;
 }
 
-static int Command(void  *_context, OutputCmd_t command, void * argument) {
-    Context_t  *context = (Context_t*) _context;
+static int Command(Context_t *context, OutputCmd_t command, void * argument) {
     int ret = cERR_SUBTITLE_NO_ERROR;
 
     subtitle_printf(50, "%d\n", command);

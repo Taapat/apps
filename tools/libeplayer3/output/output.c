@@ -144,8 +144,7 @@ static void OutputDel(Context_t  *context, char * port) {
 
 }
 
-static int Command(void  *_context, OutputCmd_t command, void * argument) {
-    Context_t  *context = (Context_t*) _context;
+static int Command(Context_t *context, OutputCmd_t command, void * argument) {
     int ret = cERR_OUTPUT_NO_ERROR;
 
     output_printf(10, "%s::%s Command %d\n", FILENAME, __FUNCTION__, command);

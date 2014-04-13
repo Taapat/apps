@@ -724,9 +724,8 @@ static int container_ass_switch_subtitle(Context_t* context, int* arg __attribut
 }
 
 
-static int Command(void  *_context, ContainerCmd_t command, void * argument)
+static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 {
-    Context_t  *context = (Context_t*) _context;
     int ret = cERR_CONTAINER_ASS_NO_ERROR;
 
     ass_printf(50, "Command %d\n", command);

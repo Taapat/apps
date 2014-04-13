@@ -89,8 +89,7 @@ static int selectContainer(Context_t  *context, char * extension) {
 }
 
 
-static int Command(void  *_context, ContainerCmd_t command, void * argument) {
-    Context_t* context = (Context_t*) _context;
+static int Command(Context_t *context, ContainerCmd_t command, void * argument) {
     int ret = 0;
 
     container_printf(10, "%s::%s\n", FILENAME, __FUNCTION__);

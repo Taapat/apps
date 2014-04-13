@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
- 
+
 typedef enum {
     MANAGER_ADD,
     MANAGER_LIST,
@@ -57,9 +57,12 @@ typedef struct Track_s {
     int			  pending;
 } Track_t;
 
+struct Context_s;
+typedef struct Context_s Context_t;
+
 typedef struct Manager_s {
     char * Name;
-    int (* Command) (/*Context_t*/void  *, ManagerCmd_t, void *);
+    int (* Command) (Context_t *, ManagerCmd_t, void *);
     char ** Capabilities;
 
 } Manager_t;

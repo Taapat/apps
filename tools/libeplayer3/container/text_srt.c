@@ -453,8 +453,7 @@ static int SrtDel(Context_t *context) {
     return ret;
 }
 
-static int Command(void  *_context, ContainerCmd_t command, void * argument) {
-    Context_t  *context = (Context_t*) _context;
+static int Command(Context_t *context, ContainerCmd_t command, void * argument) {
     int ret = cERR_SRT_NO_ERROR;
 
     srt_printf(10, "\n");

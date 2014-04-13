@@ -39,12 +39,6 @@
 #include <pthread.h>
 #include <sys/prctl.h>
 
-#include <libavutil/avutil.h>
-#include <libavutil/time.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-#include <libavutil/opt.h>
-
 #include "common.h"
 #include "misc.h"
 #include "debug.h"
@@ -1319,9 +1313,8 @@ static int container_ffmpeg_get_info(Context_t* context, char ** infoString)
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
-static int Command(void  *_context, ContainerCmd_t command, void * argument)
+static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 {
-	Context_t  *context = (Context_t*) _context;
 	int ret = cERR_CONTAINER_FFMPEG_NO_ERROR;
 	char * FILENAME = NULL;
 	double length = 0;

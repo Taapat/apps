@@ -2,6 +2,7 @@
 #define OUTPUT_H_
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include <libavutil/avutil.h>
 #include <libavutil/time.h>
@@ -69,10 +70,13 @@ typedef struct
      AVStream *stream;
 } AudioVideoOut_t;
 
+struct Context_s;
+typedef struct Context_s Context_t;
+
 typedef struct Output_s {
     char * Name;
-    int (* Command) (/*Context_t*/void  *, OutputCmd_t, void *);
-    int (* Write) (/*Context_t*/void  *, void* privateData);
+    int (* Command) (Context_t *, OutputCmd_t, void *);
+    int (* Write) (Context_t *, void* privateData);
     char ** Capabilities;
 
 } Output_t;
@@ -88,7 +92,7 @@ typedef struct OutputHandler_s {
     Output_t * subtitle;
     Output_t * dvbsubtitle;
     Output_t * teletext;
-    int (* Command) (/*Context_t*/void  *, OutputCmd_t, void *);
+    int (* Command) (Context_t *, OutputCmd_t, void *);
 } OutputHandler_t;
 
 #endif

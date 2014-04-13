@@ -217,8 +217,7 @@ static int ManagerDel(struct TracksInfo * t, Context_t * context) {
 }
 
 
-static int Command(struct TracksInfo * t, void  *_context, ManagerCmd_t command, void * argument) {
-    Context_t  *context = (Context_t*) _context;
+static int Command(struct TracksInfo * t, Context_t *context, ManagerCmd_t command, void * argument) {
     int ret = cERR_MGR_NO_ERROR;
 
     if (initialized == 0) {
@@ -306,24 +305,24 @@ static int Command(struct TracksInfo * t, void  *_context, ManagerCmd_t command,
     return ret;
 }
 
-static int Command_audio(void  *_context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_AUDIO], _context, command, argument);
+static int Command_audio(Context_t *context, ManagerCmd_t command, void * argument) {
+    return Command(&tracksInfo[TRACK_TYPE_AUDIO], context, command, argument);
 }
 
-static int Command_video(void  *_context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_VIDEO], _context, command, argument);
+static int Command_video(Context_t *context, ManagerCmd_t command, void * argument) {
+    return Command(&tracksInfo[TRACK_TYPE_VIDEO], context, command, argument);
 }
 
-static int Command_subtitle(void  *_context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_SUBTITLE], _context, command, argument);
+static int Command_subtitle(Context_t *context, ManagerCmd_t command, void * argument) {
+    return Command(&tracksInfo[TRACK_TYPE_SUBTITLE], context, command, argument);
 }
 
-static int Command_teletext(void  *_context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_TELETEXT], _context, command, argument);
+static int Command_teletext(Context_t *context, ManagerCmd_t command, void * argument) {
+    return Command(&tracksInfo[TRACK_TYPE_TELETEXT], context, command, argument);
 }
 
-static int Command_dvbsubtitle(void  *_context, ManagerCmd_t command, void * argument) {
-    return Command(&tracksInfo[TRACK_TYPE_DVBSUBTITLE], _context, command, argument);
+static int Command_dvbsubtitle(Context_t *context, ManagerCmd_t command, void * argument) {
+    return Command(&tracksInfo[TRACK_TYPE_DVBSUBTITLE], context, command, argument);
 }
 
 struct Manager_s AudioManager = {
