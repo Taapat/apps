@@ -78,21 +78,6 @@ static Output_t * AvailableOutput[] = {
 /* MISC Functions                */
 /* ***************************** */
 
-static void printOutputCapabilities() {
-    int i, j;
-
-    output_printf(10, "%s::%s\n", FILENAME, __FUNCTION__);
-    output_printf(10, "Capabilities:\n");
-
-    for (i = 0; AvailableOutput[i] != NULL; i++)	{
-        output_printf(10, "\t%s : ", AvailableOutput[i]->Name);
-
-        for (j = 0; AvailableOutput[i]->Capabilities[j] != NULL; j++)
-            output_printf(10, "%s ", AvailableOutput[i]->Capabilities[j]);
-        output_printf(10, "\n");
-    }
-}
-
 /* ***************************** */
 /* Output Functions              */
 /* ***************************** */
@@ -188,10 +173,6 @@ static int Command(Context_t *context, OutputCmd_t command, void * argument) {
     }
     case OUTPUT_DEL: {
         OutputDel(context, (char*) argument);
-        break;
-    }
-    case OUTPUT_CAPABILITIES: {
-        printOutputCapabilities();
         break;
     }
     case OUTPUT_PLAY: { // 4
