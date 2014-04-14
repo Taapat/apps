@@ -31,7 +31,6 @@ meta_LDADD =  -leplayer3 -lpthread
 libeplayerincludedir =$(includedir)/libeplayer
 
 libeplayerinclude_HEADERS = \
-	include/aac.h \
 	include/common.h \
 	include/container.h \
 	include/debug.h \

@@ -42,7 +42,6 @@
 #include "common.h"
 #include "misc.h"
 #include "debug.h"
-#include "aac.h"
 #include "pcm.h"
 #include "ffmpeg_metadata.h"
 #include "subtitle.h"
@@ -927,20 +926,19 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
 					}
 
-					if(stream->codec->codec_id == AV_CODEC_ID_AAC) {
-						unsigned int sample_index;
+					if(!strncmp(encoding, "A_AAC", 5)) {
+						unsigned int sample_index = 0;
 
 						if(stream->codec->extradata_size >= 2) {
 							Hexdump(stream->codec->extradata, stream->codec->extradata_size);
 							sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
 								+ (stream->codec->extradata[1] >> 7);
 						}
-						else {
-							sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
-						}
+						else if((32000 <= stream->codec->sample_rate) || (stream->codec->extradata_size == 0))
+							sample_index = 5;
 
-						if ((sample_index > 4) || (stream->codec->extradata_size == 0)) { // I do not know if it is the right way, but works on all files which I tested
-							ffmpeg_printf(10,"aac sample index %d, use A_IPCM\n", sample_index);
+						if (sample_index > 4) { // I do not know if it is the right way, but works on all files which I tested
+							ffmpeg_printf(10,"aac sample index > 4, use A_IPCM\n");
 							encoding = "A_IPCM";
 							track.Encoding = "A_IPCM";
 						}
