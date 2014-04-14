@@ -152,6 +152,7 @@ static char* Codec2Encoding(AVCodecContext *codec)
 			return "A_AC3";
 		case AV_CODEC_ID_DTS:
 			return "A_DTS";
+#if 0
 			/* subtitle */
 		case AV_CODEC_ID_SSA:
 			return "S_TEXT/ASS"; /* Hellmaster1024: seems to be ASS instead of SSA */
@@ -923,6 +924,28 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					}
 					else {
 						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
+					}
+
+					if(stream->codec->codec_id == AV_CODEC_ID_AAC) {
+						unsigned int sample_index;
+
+						if(stream->codec->extradata_size >= 2) {
+							Hexdump(stream->codec->extradata, stream->codec->extradata_size);
+							sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
+								+ (stream->codec->extradata[1] >> 7);
+						}
+						else {
+							sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
+						}
+
+						if ((sample_index > 4) || (stream->codec->extradata_size == 0)) { // I do not know if it is the right way, but works on all files which I tested
+							ffmpeg_printf(10,"aac sample index %d, use A_IPCM\n", sample_index);
+							encoding = "A_IPCM";
+							track.Encoding = "A_IPCM";
+						}
+						else {
+							ffmpeg_printf(10,"aac sample index %d, use A_AAC\n", sample_index);
+						}
 					}
 
 					if(!strncmp(encoding, "A_IPCM", 6))
