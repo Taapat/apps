@@ -67,6 +67,7 @@ extern Writer_t WriterAudioPCM;
 extern Writer_t WriterAudioMP3;
 extern Writer_t WriterAudioMPEGL3;
 extern Writer_t WriterAudioAC3;
+extern Writer_t WriterAudioAAC;
 extern Writer_t WriterAudioDTS;
 extern Writer_t WriterAudioFLAC;
 extern Writer_t WriterAudioVORBIS;

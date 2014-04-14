@@ -10,7 +10,7 @@ libeplayer3_la_SOURCES =  \
 	container/text_ssa.c container/container_ass.c \
 	manager/manager.c \
 	output/output_subtitle.c output/linuxdvb.c output/output.c \
-	playback/playback.c output/writer/writer.c output/writer/wmv.c \
+	playback/playback.c output/writer/writer.c output/writer/aac.c output/writer/wmv.c \
 	output/writer/ac3.c output/writer/divx.c output/writer/pes.c \
 	output/writer/dts.c output/writer/mpeg2.c output/writer/mp3.c output/writer/misc.c \
 	output/writer/h264.c output/writer/h263.c output/writer/vc1.c output/writer/framebuffer.c \
@@ -31,6 +31,7 @@ meta_LDADD =  -leplayer3 -lpthread
 libeplayerincludedir =$(includedir)/libeplayer
 
 libeplayerinclude_HEADERS = \
+	include/aac.h \
 	include/common.h \
 	include/container.h \
 	include/debug.h \
