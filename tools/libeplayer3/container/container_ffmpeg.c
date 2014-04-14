@@ -152,7 +152,8 @@ static char* Codec2Encoding(AVCodecContext *codec)
 			return "A_AC3";
 		case AV_CODEC_ID_DTS:
 			return "A_DTS";
-#if 0
+		case AV_CODEC_ID_AAC:
+			return "A_AAC";
 			/* subtitle */
 		case AV_CODEC_ID_SSA:
 			return "S_TEXT/ASS"; /* Hellmaster1024: seems to be ASS instead of SSA */
