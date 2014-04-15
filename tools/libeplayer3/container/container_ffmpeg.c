@@ -938,12 +938,12 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 							sample_index = 5;
 
 						if (sample_index > 4) { // I do not know if it is the right way, but works on all files which I tested
-							ffmpeg_printf(10,"aac sample index > 4, use A_IPCM\n");
+							ffmpeg_printf(10, "use resampling for AAC\n");
 							encoding = "A_IPCM";
 							track.Encoding = "A_IPCM";
 						}
 						else {
-							ffmpeg_printf(10,"aac sample index %d, use A_AAC\n", sample_index);
+							ffmpeg_printf(10, "aac sample index %d, use A_AAC\n", sample_index);
 						}
 					}
 
