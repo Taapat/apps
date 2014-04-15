@@ -180,21 +180,15 @@ static char* Codec2Encoding(AVCodecContext *codec)
 
 long long int calcPts(AVStream* stream, int64_t pts)
 {
-	if (!stream)
-	{
-		ffmpeg_err("stream / packet null\n");
-		return INVALID_PTS_VALUE;
-	}
-
 	if(pts == AV_NOPTS_VALUE)
-		pts = INVALID_PTS_VALUE;
-	else if (avContext->start_time == AV_NOPTS_VALUE)
-		pts = 90000.0 * (double)pts * av_q2d(stream->time_base);
-	else
-		pts = 90000.0 * ((double)pts * av_q2d(stream->time_base) - avContext->start_time / AV_TIME_BASE);
+		return INVALID_PTS_VALUE;
 
-	if (pts & 0x8000000000000000ull)
-		pts = INVALID_PTS_VALUE;
+	pts = 90000.0 * (double)pts * stream->time_base.num / stream->time_base.den;
+	if(avContext->start_time == AV_NOPTS_VALUE)
+		pts -= 90000.0 * avContext->start_time / AV_TIME_BASE;
+
+	if (pts < 0)
+		return INVALID_PTS_VALUE;
 
 	return pts;
 }
