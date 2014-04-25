@@ -4,12 +4,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <libavutil/avutil.h>
-#include <libavutil/time.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-#include <libavutil/opt.h>
-
 typedef enum {
     OUTPUT_INIT,
     OUTPUT_ADD,
@@ -59,11 +53,6 @@ typedef struct
      unsigned int           height;
      
      OutputType_t           type;
-
-     /* context from ffmpeg */
-     AVFormatContext *avfc;
-     /* stream from ffmpeg */
-     AVStream *stream;
 } AudioVideoOut_t;
 
 struct Context_s;

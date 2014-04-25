@@ -42,8 +42,6 @@ typedef struct Track_s {
     int                   width;
     int                   height;
 
-    /* context from ffmpeg */
-    AVFormatContext *avfc;
     /* stream from ffmpeg */
     void               *  stream;
     /* codec extra data (header or some other stuff) */

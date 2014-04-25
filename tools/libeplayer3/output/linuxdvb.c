@@ -847,8 +847,6 @@ static int Write(Context_t *context, void* _out)
     int                ret       = cERR_LINUXDVB_NO_ERROR;
     int                res       = 0;
     WriterAVCallData_t call;
-    call.stream = out->stream;
-    call.avfc = out->avfc;
 
     if (out == NULL)
     {

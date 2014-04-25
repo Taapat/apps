@@ -4,12 +4,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <libavutil/avutil.h>
-#include <libavutil/time.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-#include <libavutil/opt.h>
-
 typedef enum { eNone, eAudio, eVideo, eGfx} eWriterType_t;
 
 typedef struct {
@@ -24,10 +18,6 @@ typedef struct {
     unsigned int           Width;
     unsigned int           Height;
     unsigned char          Version;
-     /* context from ffmpeg */
-     AVFormatContext *avfc;
-     /* stream from ffmpeg */
-     AVStream *stream;
 } WriterAVCallData_t;
 
 typedef struct {
