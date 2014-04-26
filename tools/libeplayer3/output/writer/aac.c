@@ -246,10 +246,12 @@ static int writeData(void* _call)
     if (call->private_data == NULL)
     {
         aac_printf(10, "private_data = NULL\n");
-	memcpy (ExtraData, DefaultAACHeader, AAC_HEADER_LENGTH);
+
+        call->private_data = DefaultAACHeader;
+        call->private_size = AAC_HEADER_LENGTH;
     }
-    else
-    	memcpy (ExtraData, call->private_data, AAC_HEADER_LENGTH);
+
+    memcpy (ExtraData, call->private_data, AAC_HEADER_LENGTH);
 
     ExtraData[3]       |= (PacketLength >> 11) & 0x3;
     ExtraData[4]        = (PacketLength >> 3) & 0xff;

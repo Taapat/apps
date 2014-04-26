@@ -124,6 +124,10 @@ void freeTrack(Track_t* track)
         free(track->language);
         track->language = NULL;
     }
+
+    if (track->aacbuf != NULL)
+        free(track->aacbuf);
+        track->aacbuf = NULL;
 }
 
 static int ManagerAdd(struct TracksInfo * t, Context_t  *context, Track_t track) {

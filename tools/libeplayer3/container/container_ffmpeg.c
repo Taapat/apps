@@ -48,6 +48,7 @@
 #include "common.h"
 #include "misc.h"
 #include "debug.h"
+#include "aac.h"
 #include "pcm.h"
 #include "ffmpeg_metadata.h"
 #include "subtitle.h"
@@ -547,6 +548,26 @@ static void FFMPEGThread(Context_t *context) {
 					av_freep(&output);
 				}
 			}
+			else if (audioTrack->have_aacheader == 1)
+			{
+				ffmpeg_printf(200,"write audio aac\n");
+
+				avOut.data       = packet.data;
+				avOut.len        = packet.size;
+				avOut.pts        = pts;
+				avOut.extradata  = audioTrack->aacbuf;
+				avOut.extralen   = audioTrack->aacbuflen;
+				avOut.frameRate  = 0;
+				avOut.timeScale  = 0;
+				avOut.width      = 0;
+				avOut.height     = 0;
+				avOut.type       = OUTPUT_TYPE_AUDIO;
+
+				if (context->output->audio->Write(context, &avOut) < 0)
+				{
+					ffmpeg_err("(aac) writing data to audio device failed\n");
+				}
+			}
 			else
 			{
 				avOut.data	 = packet_data;
@@ -846,6 +867,8 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.extraData		= stream->codec->extradata;
 					track.extraSize		= stream->codec->extradata_size;
 					track.frame_rate	= stream->r_frame_rate.num;
+					track.aacbuf        = 0;
+					track.have_aacheader = -1;
 
 					double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
 
@@ -908,8 +931,10 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					ffmpeg_printf(10, "Language %s\n", track.Name);
 
 					track.Encoding		= encoding;
-					track.stream		= stream;
-					track.Id		= stream->id;
+					track.stream        = stream;
+					track.Id            = stream->id;
+					track.aacbuf        = 0;
+					track.have_aacheader = -1;
 
 					if(stream->duration == AV_NOPTS_VALUE) {
 						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
@@ -920,23 +945,61 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					}
 
 					if(!strncmp(encoding, "A_AAC", 5)) {
-						unsigned int sample_index = 0;
-
-						if(stream->codec->extradata_size >= 2) {
-							Hexdump(stream->codec->extradata, stream->codec->extradata_size);
-							sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
-								+ (stream->codec->extradata[1] >> 7);
-						}
-						else if((32000 <= stream->codec->sample_rate) || (stream->codec->extradata_size == 0))
-							sample_index = 5;
-
-						if (sample_index > 4) { // I do not know if it is the right way, but works on all files which I tested
+						ffmpeg_printf(10,"stream->codec->extradata_size %d\n", stream->codec->extradata_size);
+						if (stream->codec->extradata_size == 0) {
 							ffmpeg_printf(10, "use resampling for AAC\n");
 							encoding = "A_IPCM";
 							track.Encoding = "A_IPCM";
 						}
-						else {
-							ffmpeg_printf(10, "aac sample index %d, use A_AAC\n", sample_index);
+						else 
+						{
+							ffmpeg_printf(10,"Create AAC ExtraData\n");
+							Hexdump(stream->codec->extradata, stream->codec->extradata_size);
+
+/* extradata
+13 10 56 e5 9d 48 00 (anderen cops)
+	object_type: 00010 2 = LC
+	sample_rate: 011 0 6 = 24000
+	chan_config: 0010 2 = Stereo
+	000 0
+	1010110 111 = 0x2b7
+	00101 = SBR
+	1
+	0011 = 48000
+	101 01001000 = 0x548
+	ps = 0
+	0000000
+*/
+
+							unsigned int object_type = 2; // LC
+							unsigned int sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
+							unsigned int chan_config = stream->codec->channels;
+							if(stream->codec->extradata_size >= 2) {
+								object_type = stream->codec->extradata[0] >> 3;
+								sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
+									+ (stream->codec->extradata[1] >> 7);
+								chan_config = (stream->codec->extradata[1] >> 3) && 0xf;
+							}
+
+							ffmpeg_printf(10,"aac object_type %d\n", object_type);
+							ffmpeg_printf(10,"aac sample_index %d\n", sample_index);
+							ffmpeg_printf(10,"aac chan_config %d\n", chan_config);
+
+							object_type -= 1; // Cause of ADTS
+
+							track.aacbuflen = AAC_HEADER_LENGTH;
+							track.aacbuf = malloc(8);
+							track.aacbuf[0] = 0xFF;
+							track.aacbuf[1] = 0xF1;
+							track.aacbuf[2] = ((object_type & 0x03) << 6)  | (sample_index << 2) | ((chan_config >> 2) & 0x01);
+							track.aacbuf[3] = (chan_config & 0x03) << 6;
+							track.aacbuf[4] = 0x00;
+							track.aacbuf[5] = 0x1F;
+							track.aacbuf[6] = 0xFC;
+
+							printf("AAC_HEADER -> ");
+							Hexdump(track.aacbuf,7);
+							track.have_aacheader = 1;
 						}
 					}
 
@@ -977,6 +1040,9 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 					track.Encoding		 = encoding;
 					track.stream		 = stream;
 					track.Id			 = stream->id;
+
+					track.aacbuf         = 0;
+					track.have_aacheader = -1;
 
 					track.width		 = -1; /* will be filled online from videotrack */
 					track.height		 = -1; /* will be filled online from videotrack */
