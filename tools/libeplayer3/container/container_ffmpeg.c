@@ -750,6 +750,8 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 
 	context->playback->abortRequested = 0;
 	context->playback->abortPlayback = 0;
+
+again:
 	avContext = avformat_alloc_context();
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
@@ -763,6 +765,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		ffmpeg_err("Cause: %s\n", error);
 
 		isContainerRunning = 0;
+		avformat_free_context(avContext);
 		return cERR_CONTAINER_FFMPEG_OPEN;
 	}
 
@@ -783,15 +786,13 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 
 	if (avformat_find_stream_info(avContext, NULL) < 0) {
 		ffmpeg_err("Error avformat_find_stream_info\n");
-#ifdef this_is_ok
-		/* crow reports that sometimes this returns an error
-		 * but the file is played back well. so remove this
-		 * until other works are done and we can prove this.
-		 */
 		avformat_close_input(&avContext);
+		if (context->playback->noprobe) {
+			context->playback->noprobe = 0;
+			goto again;
+		}
 		isContainerRunning = 0;
 		return cERR_CONTAINER_FFMPEG_STREAM;
-#endif
 	}
 
 	terminating = 0;
