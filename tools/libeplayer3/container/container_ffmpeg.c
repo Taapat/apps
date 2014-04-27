@@ -741,7 +741,7 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 		ffmpeg_err("ups already running?\n");
 		return cERR_CONTAINER_FFMPEG_RUNNING;
 	}
-	isContainerRunning = 1;
+	isContainerRunning = 0;
 
 	/* initialize ffmpeg */
 	av_register_all();
@@ -764,8 +764,8 @@ again:
 		av_strerror(err, error, sizeof error);
 		ffmpeg_err("Cause: %s\n", error);
 
-		isContainerRunning = 0;
-		avformat_free_context(avContext);
+		avformat_close_input(&avContext);
+		avformat_network_deinit();
 		return cERR_CONTAINER_FFMPEG_OPEN;
 	}
 
@@ -786,13 +786,21 @@ again:
 
 	if (avformat_find_stream_info(avContext, NULL) < 0) {
 		ffmpeg_err("Error avformat_find_stream_info\n");
-		avformat_close_input(&avContext);
 		if (context->playback->noprobe) {
 			context->playback->noprobe = 0;
+			avformat_close_input(&avContext);
+			ffmpeg_err("Try again\n");
 			goto again;
 		}
-		isContainerRunning = 0;
+#ifdef this_is_ok
+		/* crow reports that sometimes this returns an error
+		* but the file is played back well. so remove this
+		* until other works are done and we can prove this.
+		*/
+		avformat_close_input(&avContext);
+		avformat_network_deinit();
 		return cERR_CONTAINER_FFMPEG_STREAM;
+#endif
 	}
 
 	terminating = 0;
@@ -812,10 +820,11 @@ again:
 	}
 	if (!found_av) {
 		avformat_close_input(&avContext);
-		isContainerRunning = 0;
+		avformat_network_deinit();
 		return cERR_CONTAINER_FFMPEG_STREAM;
 	}
 
+	isContainerRunning = 1;
 	return res;
 }
 
