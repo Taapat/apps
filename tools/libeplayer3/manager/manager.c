@@ -233,7 +233,6 @@ static int Command(struct TracksInfo * t, Context_t *context, ManagerCmd_t comma
         break;
     }
     case MANAGER_LIST: {
-	container_ffmpeg_update_tracks(context, context->playback->uri, 0);
         *((char***)argument) = ManagerList(t, context);
         break;
     }

@@ -719,123 +719,10 @@ static int interrupt_cb(void *ctx)
 }
 
 
-static int container_ffmpeg_init(Context_t *context, char * filename)
-{
-	int ret = 0;
-
-	ffmpeg_printf(10, ">\n");
-
-	if (filename == NULL) {
-		ffmpeg_err("filename NULL\n");
-		return cERR_CONTAINER_FFMPEG_NULL;
-	}
-
-	if (context == NULL) {
-		ffmpeg_err("context NULL\n");
-		return cERR_CONTAINER_FFMPEG_NULL;
-	}
-
-	ffmpeg_printf(10, "filename %s\n", filename);
-
-	if (isContainerRunning) {
-		ffmpeg_err("ups already running?\n");
-		return cERR_CONTAINER_FFMPEG_RUNNING;
-	}
-
-	isContainerRunning = 0;
-
-	/* initialize ffmpeg */
-	av_register_all();
-	avformat_network_init();
-	//av_log_set_level( AV_LOG_DEBUG );
-
-	context->playback->abortRequested = 0;
-	context->playback->abortPlayback = 0;
-
-again:
-	avContext = avformat_alloc_context();
-	avContext->interrupt_callback.callback = interrupt_cb;
-	avContext->interrupt_callback.opaque = context->playback;
-
-	ret = avformat_open_input(&avContext, filename, NULL, NULL);
-	if (ret < 0) {
-		char error[512];
-		ffmpeg_err("avformat_open_input failed %d (%s)\n", ret, filename);
-		av_strerror(ret, error, sizeof error);
-		ffmpeg_err("Cause: %s\n", error);
-
-		ret = cERR_CONTAINER_FFMPEG_OPEN;
-		goto fail;
-	}
-
-	if (strstr(filename, "http://") == filename) {
-		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
-		avContext->max_analyze_duration = 0;
-	}
-	else if (context->playback->noprobe) {
-		ffmpeg_printf(10, "noprobe\n");
-		avContext->max_analyze_duration = 1;
-	}
-
-	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
-	avContext->flags |= AVFMT_FLAG_GENPTS;
-
-	ffmpeg_printf(20, "find_streaminfo\n");
-
-	ret = avformat_find_stream_info(avContext, NULL);
-	if (ret < 0) {
-		ffmpeg_err("Error avformat_find_stream_info\n");
-		if (context->playback->noprobe) {
-			context->playback->noprobe = 0;
-			avformat_close_input(&avContext);
-			ffmpeg_err("Try again\n");
-			goto again;
-		}
-#ifdef this_is_ok
-		/* crow reports that sometimes this returns an error
-		* but the file is played back well. so remove this
-		* until other works are done and we can prove this.
-		*/
-		ret = cERR_CONTAINER_FFMPEG_STREAM;
-		goto fail;
-#endif
-	}
-
-	ret = cERR_CONTAINER_FFMPEG_STREAM;
-	unsigned int n;
-	for (n = 0; n < avContext->nb_streams; n++) {
-		AVStream *stream = avContext->streams[n];
-		switch (stream->codec->codec_type) {
-			case AVMEDIA_TYPE_AUDIO:
-			case AVMEDIA_TYPE_VIDEO:
-				ret = 0;
-			default:
-				break;
-		}
-	}
-	if (ret < 0) {
-		ffmpeg_err("Not found video or audio stream\n");
-		goto fail;
-	}
-
-	terminating = 0;
-	latestPts = 0;
-	ret = container_ffmpeg_update_tracks(context, filename, 1);
-	isContainerRunning = 1;
-	return ret;
-
-fail:
-	avformat_close_input(&avContext);
-	avformat_network_deinit();
-	return ret;
-}
-
-
-int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initial)
+int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 {
 	if (terminating)
 		return cERR_CONTAINER_FFMPEG_NO_ERROR;
-
 
 	if (context->manager->video)
 		context->manager->video->Command(context, MANAGER_INIT_UPDATE, NULL);
@@ -1077,7 +964,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 					ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
 
-					if (initial && context->manager->subtitle) {
+					if (context->manager->subtitle) {
 						if (!stream->codec->codec) {
 							stream->codec->codec = avcodec_find_decoder(stream->codec->codec_id);
 							if (!stream->codec->codec)
@@ -1107,6 +994,119 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename, int initi
 
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
+
+
+static int container_ffmpeg_init(Context_t *context, char * filename)
+{
+	int ret = 0;
+
+	ffmpeg_printf(10, ">\n");
+
+	if (filename == NULL) {
+		ffmpeg_err("filename NULL\n");
+		return cERR_CONTAINER_FFMPEG_NULL;
+	}
+
+	if (context == NULL) {
+		ffmpeg_err("context NULL\n");
+		return cERR_CONTAINER_FFMPEG_NULL;
+	}
+
+	ffmpeg_printf(10, "filename %s\n", filename);
+
+	if (isContainerRunning) {
+		ffmpeg_err("ups already running?\n");
+		return cERR_CONTAINER_FFMPEG_RUNNING;
+	}
+
+	isContainerRunning = 0;
+
+	/* initialize ffmpeg */
+	av_register_all();
+	avformat_network_init();
+	//av_log_set_level( AV_LOG_DEBUG );
+
+	context->playback->abortRequested = 0;
+	context->playback->abortPlayback = 0;
+
+again:
+	avContext = avformat_alloc_context();
+	avContext->interrupt_callback.callback = interrupt_cb;
+	avContext->interrupt_callback.opaque = context->playback;
+
+	ret = avformat_open_input(&avContext, filename, NULL, NULL);
+	if (ret < 0) {
+		char error[512];
+		ffmpeg_err("avformat_open_input failed %d (%s)\n", ret, filename);
+		av_strerror(ret, error, sizeof error);
+		ffmpeg_err("Cause: %s\n", error);
+
+		ret = cERR_CONTAINER_FFMPEG_OPEN;
+		goto fail;
+	}
+
+	if (strstr(filename, "http://") == filename) {
+		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
+		avContext->max_analyze_duration = 0;
+	}
+	else if (context->playback->noprobe) {
+		ffmpeg_printf(10, "noprobe\n");
+		avContext->max_analyze_duration = 1;
+	}
+
+	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
+	avContext->flags |= AVFMT_FLAG_GENPTS;
+
+	ffmpeg_printf(20, "find_streaminfo\n");
+
+	ret = avformat_find_stream_info(avContext, NULL);
+	if (ret < 0) {
+		ffmpeg_err("Error avformat_find_stream_info\n");
+		if (context->playback->noprobe) {
+			context->playback->noprobe = 0;
+			avformat_close_input(&avContext);
+			ffmpeg_err("Try again\n");
+			goto again;
+		}
+#ifdef this_is_ok
+		/* crow reports that sometimes this returns an error
+		* but the file is played back well. so remove this
+		* until other works are done and we can prove this.
+		*/
+		ret = cERR_CONTAINER_FFMPEG_STREAM;
+		goto fail;
+#endif
+	}
+
+	ret = cERR_CONTAINER_FFMPEG_STREAM;
+	unsigned int n;
+	for (n = 0; n < avContext->nb_streams; n++) {
+		AVStream *stream = avContext->streams[n];
+		switch (stream->codec->codec_type) {
+			case AVMEDIA_TYPE_AUDIO:
+			case AVMEDIA_TYPE_VIDEO:
+				ret = 0;
+			default:
+				break;
+		}
+	}
+	if (ret < 0) {
+		ffmpeg_err("Not found video or audio stream\n");
+		goto fail;
+	}
+
+	terminating = 0;
+	latestPts = 0;
+	ret = container_ffmpeg_update_tracks(context, filename);
+	isContainerRunning = 1;
+	return ret;
+
+fail:
+	avformat_close_input(&avContext);
+	avformat_network_deinit();
+	return ret;
+}
+
 
 static int container_ffmpeg_play(Context_t *context)
 {
