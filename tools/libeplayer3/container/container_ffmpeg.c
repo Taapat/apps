@@ -891,39 +891,36 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 				}
 				break;
 			case AVMEDIA_TYPE_SUBTITLE:
-				{
-					ffmpeg_printf(10, "CODEC_TYPE_SUBTITLE %d\n",stream->codec->codec_type);
+				ffmpeg_printf(10, "CODEC_TYPE_SUBTITLE %d\n",stream->codec->codec_type);
 
-					track.width = -1; /* will be filled online from videotrack */
-					track.height = -1; /* will be filled online from videotrack */
+				track.width = -1; /* will be filled online from videotrack */
+				track.height = -1; /* will be filled online from videotrack */
+				track.extraData = stream->codec->extradata;
+				track.extraSize = stream->codec->extradata_size;
 
-					track.extraData = stream->codec->extradata;
-					track.extraSize = stream->codec->extradata_size;
+				ffmpeg_printf(1, "subtitle codec %d\n", stream->codec->codec_id);
+				ffmpeg_printf(1, "subtitle width %d\n", stream->codec->width);
+				ffmpeg_printf(1, "subtitle height %d\n", stream->codec->height);
+				ffmpeg_printf(1, "subtitle stream %p\n", stream);
 
-					ffmpeg_printf(1, "subtitle codec %d\n", stream->codec->codec_id);
-					ffmpeg_printf(1, "subtitle width %d\n", stream->codec->width);
-					ffmpeg_printf(1, "subtitle height %d\n", stream->codec->height);
-					ffmpeg_printf(1, "subtitle stream %p\n", stream);
+				ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
 
-					ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
-
-					if (context->manager->subtitle) {
-						if (!stream->codec->codec) {
-							stream->codec->codec = avcodec_find_decoder(stream->codec->codec_id);
-							if (!stream->codec->codec)
-								ffmpeg_err("avcodec_find_decoder failed for subtitle track %d\n", n);
-							else if (avcodec_open2(stream->codec, stream->codec->codec, NULL)) {
-								ffmpeg_err("avcodec_open2 failed for subtitle track %d\n", n);
-								stream->codec->codec = NULL;
-							}
-						}
-						if (context->manager->subtitle->Command(context, MANAGER_ADD, &track) < 0) {
-							/* konfetti: fixme: is this a reason to return with error? */
-							ffmpeg_err("failed to add subtitle track %d\n", n);
+				if (context->manager->subtitle) {
+					if (!stream->codec->codec) {
+						stream->codec->codec = avcodec_find_decoder(stream->codec->codec_id);
+						if (!stream->codec->codec)
+							ffmpeg_err("avcodec_find_decoder failed for subtitle track %d\n", n);
+						else if (avcodec_open2(stream->codec, stream->codec->codec, NULL)) {
+							ffmpeg_err("avcodec_open2 failed for subtitle track %d\n", n);
+							stream->codec->codec = NULL;
 						}
 					}
-					break;
+					if (context->manager->subtitle->Command(context, MANAGER_ADD, &track) < 0) {
+						/* konfetti: fixme: is this a reason to return with error? */
+						ffmpeg_err("failed to add subtitle track %d\n", n);
+					}
 				}
+				break;
 			case AVMEDIA_TYPE_UNKNOWN:
 			case AVMEDIA_TYPE_DATA:
 			case AVMEDIA_TYPE_ATTACHMENT:
