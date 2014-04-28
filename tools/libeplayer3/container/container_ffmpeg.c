@@ -737,7 +737,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 	ffmpeg_printf(1, "number streams %d\n", avContext->nb_streams);
 
 	unsigned int n;
-
 	for ( n = 0; n < avContext->nb_streams; n++) {
 		Track_t track;
 		AVStream *stream = avContext->streams[n];
@@ -745,7 +744,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 		char* encoding = Codec2Encoding(stream->codec);
 
 		if (!stream->id)
-			stream->id = n;
+			stream->id = n + 1;
 
 		if (encoding != NULL)
 			ffmpeg_printf(1, "%d. encoding = %s\n", stream->id, encoding);
@@ -755,105 +754,76 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 		 */
 		memset(&track, 0, sizeof(track));
 
+		AVDictionaryEntry *lang;
+		lang = av_dict_get(stream->metadata, "language", NULL, 0);
+		track.Name = lang ? lang->value : "und";
+		ffmpeg_printf(10, "Language %s\n", track.Name);
+		track.Encoding = encoding;
+		track.stream = stream;
+		track.Id = stream->id;
+		track.aacbuf = 0;
+		track.have_aacheader = -1;
+		if(stream->duration == AV_NOPTS_VALUE) {
+			ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
+			track.duration = (double) avContext->duration / 1000.0;
+		}
+		else {
+			track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
+		}
+
 		switch (stream->codec->codec_type) {
 			case AVMEDIA_TYPE_VIDEO:
 				ffmpeg_printf(10, "CODEC_TYPE_VIDEO %d\n",stream->codec->codec_type);
 
-				if (encoding != NULL) {
-					track.type		    = eTypeES;
-					track.width		    = stream->codec->width;
-					track.height		= stream->codec->height;
-					track.extraData		= stream->codec->extradata;
-					track.extraSize		= stream->codec->extradata_size;
-					track.frame_rate	= stream->r_frame_rate.num;
-					track.aacbuf        = 0;
-					track.have_aacheader = -1;
+				track.type = eTypeES;
+				track.width = stream->codec->width;
+				track.height = stream->codec->height;
+				track.extraData = stream->codec->extradata;
+				track.extraSize = stream->codec->extradata_size;
+				track.frame_rate = stream->r_frame_rate.num;
 
-					double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
+				double frame_rate = av_q2d(stream->r_frame_rate); /* rational to double */
 
-					ffmpeg_printf(10, "frame_rate = %f\n", frame_rate);
+				ffmpeg_printf(10, "frame_rate = %f\n", frame_rate);
 
-					track.frame_rate = frame_rate * 1000.0;
+				track.frame_rate = frame_rate * 1000.0;
 
-					/* fixme: revise this */
+				/* fixme: revise this */
+				if (track.frame_rate < 23970)
+					track.TimeScale = 1001;
+				else
+					track.TimeScale = 1000;
 
-					if (track.frame_rate < 23970)
-						track.TimeScale = 1001;
-					else
-						track.TimeScale = 1000;
+				ffmpeg_printf(10, "bit_rate = %d\n",stream->codec->bit_rate);
+				ffmpeg_printf(10, "flags = %d\n",stream->codec->flags);
+				ffmpeg_printf(10, "frame_bits = %d\n",stream->codec->frame_bits);
+				ffmpeg_printf(10, "time_base.den %d\n",stream->time_base.den);
+				ffmpeg_printf(10, "time_base.num %d\n",stream->time_base.num);
+				ffmpeg_printf(10, "frame_rate.num %d\n",stream->r_frame_rate.num);
+				ffmpeg_printf(10, "frame_rate.den %d\n",stream->r_frame_rate.den);
+				ffmpeg_printf(10, "frame_rate %d\n", track.frame_rate);
+				ffmpeg_printf(10, "TimeScale %d\n", track.TimeScale);
 
-					ffmpeg_printf(10, "bit_rate = %d\n",stream->codec->bit_rate);
-					ffmpeg_printf(10, "flags = %d\n",stream->codec->flags);
-					ffmpeg_printf(10, "frame_bits = %d\n",stream->codec->frame_bits);
-					ffmpeg_printf(10, "time_base.den %d\n",stream->time_base.den);
-					ffmpeg_printf(10, "time_base.num %d\n",stream->time_base.num);
-					ffmpeg_printf(10, "frame_rate %d\n",stream->r_frame_rate.num);
-					ffmpeg_printf(10, "TimeScale %d\n",stream->r_frame_rate.den);
-
-					ffmpeg_printf(10, "frame_rate %d\n", track.frame_rate);
-					ffmpeg_printf(10, "TimeScale %d\n", track.TimeScale);
-
-					track.Name	= "und";
-					track.Encoding	= encoding;
-					track.stream	= stream;
-					track.Id	= stream->id;
-
-					if(stream->duration == AV_NOPTS_VALUE) {
-						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
-						track.duration = (double) avContext->duration / 1000.0;
-					}
-					else {
-						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
-					}
-
-					if (context->manager->video && context->manager->video->Command(context, MANAGER_ADD, &track) < 0) {
-						/* konfetti: fixme: is this a reason to return with error? */
-						ffmpeg_err("failed to add track %d\n", n);
-					}
-
-				}
-				else {
-					ffmpeg_err("codec type video but codec unknown %d\n", stream->codec->codec_id);
+				if (context->manager->video && context->manager->video->Command(context, MANAGER_ADD, &track) < 0) {
+					/* konfetti: fixme: is this a reason to return with error? */
+					ffmpeg_err("failed to add track %d\n", n);
 				}
 				break;
 			case AVMEDIA_TYPE_AUDIO:
 				ffmpeg_printf(10, "CODEC_TYPE_AUDIO %d\n",stream->codec->codec_type);
 
-				if (encoding != NULL) {
-					AVDictionaryEntry *lang;
-					track.type = eTypeES;
+				track.type = eTypeES;
 
-					lang = av_dict_get(stream->metadata, "language", NULL, 0);
-
-					track.Name = lang ? lang->value : "und";
-
-					ffmpeg_printf(10, "Language %s\n", track.Name);
-
-					track.Encoding		= encoding;
-					track.stream        = stream;
-					track.Id            = stream->id;
-					track.aacbuf        = 0;
-					track.have_aacheader = -1;
-
-					if(stream->duration == AV_NOPTS_VALUE) {
-						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
-						track.duration = (double) avContext->duration / 1000.0;
+				if(!strncmp(encoding, "A_AAC", 5)) {
+					ffmpeg_printf(10,"stream->codec->extradata_size %d\n", stream->codec->extradata_size);
+					if (stream->codec->extradata_size == 0) {
+						ffmpeg_printf(10, "use resampling for AAC\n");
+						encoding = "A_IPCM";
+						track.Encoding = "A_IPCM";
 					}
 					else {
-						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
-					}
-
-					if(!strncmp(encoding, "A_AAC", 5)) {
-						ffmpeg_printf(10,"stream->codec->extradata_size %d\n", stream->codec->extradata_size);
-						if (stream->codec->extradata_size == 0) {
-							ffmpeg_printf(10, "use resampling for AAC\n");
-							encoding = "A_IPCM";
-							track.Encoding = "A_IPCM";
-						}
-						else 
-						{
-							ffmpeg_printf(10,"Create AAC ExtraData\n");
-							Hexdump(stream->codec->extradata, stream->codec->extradata_size);
+						ffmpeg_printf(10,"Create AAC ExtraData\n");
+						Hexdump(stream->codec->extradata, stream->codec->extradata_size);
 
 /* extradata
 13 10 56 e5 9d 48 00 (anderen cops)
@@ -870,97 +840,70 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 	0000000
 */
 
-							unsigned int object_type = 2; // LC
-							unsigned int sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
-							unsigned int chan_config = stream->codec->channels;
-							if(stream->codec->extradata_size >= 2) {
-								object_type = stream->codec->extradata[0] >> 3;
-								sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
-									+ (stream->codec->extradata[1] >> 7);
-								chan_config = (stream->codec->extradata[1] >> 3) && 0xf;
-							}
-
-							ffmpeg_printf(10,"aac object_type %d\n", object_type);
-							ffmpeg_printf(10,"aac sample_index %d\n", sample_index);
-							ffmpeg_printf(10,"aac chan_config %d\n", chan_config);
-
-							object_type -= 1; // Cause of ADTS
-
-							track.aacbuflen = AAC_HEADER_LENGTH;
-							track.aacbuf = malloc(8);
-							track.aacbuf[0] = 0xFF;
-							track.aacbuf[1] = 0xF1;
-							track.aacbuf[2] = ((object_type & 0x03) << 6)  | (sample_index << 2) | ((chan_config >> 2) & 0x01);
-							track.aacbuf[3] = (chan_config & 0x03) << 6;
-							track.aacbuf[4] = 0x00;
-							track.aacbuf[5] = 0x1F;
-							track.aacbuf[6] = 0xFC;
-
-							printf("AAC_HEADER -> ");
-							Hexdump(track.aacbuf,7);
-							track.have_aacheader = 1;
+						unsigned int object_type = 2; // LC
+						unsigned int sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
+						unsigned int chan_config = stream->codec->channels;
+						if(stream->codec->extradata_size >= 2) {
+							object_type = stream->codec->extradata[0] >> 3;
+							sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
+								+ (stream->codec->extradata[1] >> 7);
+							chan_config = (stream->codec->extradata[1] >> 3) && 0xf;
 						}
-					}
 
-					if(!strncmp(encoding, "A_IPCM", 6))
-					{
-						track.inject_as_pcm = 1;
-						ffmpeg_printf(10, " Handle inject_as_pcm = %d\n", track.inject_as_pcm);
-						AVCodec *codec = avcodec_find_decoder(stream->codec->codec_id);
+						ffmpeg_printf(10,"aac object_type %d\n", object_type);
+						ffmpeg_printf(10,"aac sample_index %d\n", sample_index);
+						ffmpeg_printf(10,"aac chan_config %d\n", chan_config);
 
-						if(codec != NULL && !avcodec_open2(stream->codec, codec, NULL))
-							printf("AVCODEC__INIT__SUCCESS\n");
-						else
-							printf("AVCODEC__INIT__FAILED\n");
-					}
+						object_type -= 1; // Cause of ADTS
 
-					if (context->manager->audio)
-					{
-						if (context->manager->audio->Command(context, MANAGER_ADD, &track) < 0) {
-							/* konfetti: fixme: is this a reason to return with error? */
-							ffmpeg_err("failed to add track %d\n", n);
-						}
+						track.aacbuflen = AAC_HEADER_LENGTH;
+						track.aacbuf = malloc(8);
+						track.aacbuf[0] = 0xFF;
+						track.aacbuf[1] = 0xF1;
+						track.aacbuf[2] = ((object_type & 0x03) << 6)  | (sample_index << 2) | ((chan_config >> 2) & 0x01);
+						track.aacbuf[3] = (chan_config & 0x03) << 6;
+						track.aacbuf[4] = 0x00;
+						track.aacbuf[5] = 0x1F;
+						track.aacbuf[6] = 0xFC;
+
+						printf("AAC_HEADER -> ");
+						Hexdump(track.aacbuf,7);
+						track.have_aacheader = 1;
 					}
 				}
-				else {
-					ffmpeg_err("codec type audio but codec unknown %d\n", stream->codec->codec_id);
+
+				if(!strncmp(encoding, "A_IPCM", 6)) {
+					track.inject_as_pcm = 1;
+					ffmpeg_printf(10, " Handle inject_as_pcm = %d\n", track.inject_as_pcm);
+					AVCodec *codec = avcodec_find_decoder(stream->codec->codec_id);
+
+					if(codec != NULL && !avcodec_open2(stream->codec, codec, NULL))
+						printf("AVCODEC__INIT__SUCCESS\n");
+					else
+						printf("AVCODEC__INIT__FAILED\n");
+				}
+
+				if (context->manager->audio) {
+					if (context->manager->audio->Command(context, MANAGER_ADD, &track) < 0) {
+						/* konfetti: fixme: is this a reason to return with error? */
+						ffmpeg_err("failed to add track %d\n", n);
+					}
 				}
 				break;
 			case AVMEDIA_TYPE_SUBTITLE:
 				{
-					AVDictionaryEntry *lang;
 					ffmpeg_printf(10, "CODEC_TYPE_SUBTITLE %d\n",stream->codec->codec_type);
-					lang = av_dict_get(stream->metadata, "language", NULL, 0);
 
-					track.Name = lang ? lang->value : "und";
+					track.width = -1; /* will be filled online from videotrack */
+					track.height = -1; /* will be filled online from videotrack */
 
-					ffmpeg_printf(10, "Language %s\n", track.Name);
-
-					track.Encoding		 = encoding;
-					track.stream		 = stream;
-					track.Id			 = stream->id;
-
-					track.aacbuf         = 0;
-					track.have_aacheader = -1;
-
-					track.width		 = -1; /* will be filled online from videotrack */
-					track.height		 = -1; /* will be filled online from videotrack */
-
-					track.extraData		 = stream->codec->extradata;
-					track.extraSize		 = stream->codec->extradata_size;
+					track.extraData = stream->codec->extradata;
+					track.extraSize = stream->codec->extradata_size;
 
 					ffmpeg_printf(1, "subtitle codec %d\n", stream->codec->codec_id);
 					ffmpeg_printf(1, "subtitle width %d\n", stream->codec->width);
 					ffmpeg_printf(1, "subtitle height %d\n", stream->codec->height);
 					ffmpeg_printf(1, "subtitle stream %p\n", stream);
-
-					if(stream->duration == AV_NOPTS_VALUE) {
-						ffmpeg_printf(10, "Stream has no duration so we take the duration from context\n");
-						track.duration = (double) avContext->duration / 1000.0;
-					}
-					else {
-						track.duration = (double) stream->duration * av_q2d(stream->time_base) * 1000.0;
-					}
 
 					ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
 
@@ -989,9 +932,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 				ffmpeg_err("not handled or unknown codec_type %d\n", stream->codec->codec_type);
 				break;
 		}
-
 	} /* for */
-
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
