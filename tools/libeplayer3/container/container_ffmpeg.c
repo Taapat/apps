@@ -744,7 +744,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 		char* encoding = Codec2Encoding(stream->codec);
 
 		if (!stream->id)
-			stream->id = n + 1;
+			stream->id = n;
 
 		if (encoding != NULL)
 			ffmpeg_printf(1, "%d. encoding = %s\n", stream->id, encoding);
@@ -1122,7 +1122,7 @@ static int container_ffmpeg_stop(Context_t *context) {
 	return ret;
 }
 
-static int container_ffmpeg_seek(Context_t * context __attribute__ ((unused)), float sec, int absolute)
+static int container_ffmpeg_seek(float sec, int absolute)
 {
 	if (absolute)
 		seek_sec_abs = sec, seek_sec_rel = 0.0;
@@ -1281,10 +1281,10 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 			ret = container_ffmpeg_stop(context);
 			break;
 		case CONTAINER_SEEK: 
-			ret = container_ffmpeg_seek(context, (float)*((float*)argument), 0);
+			ret = container_ffmpeg_seek((float)*((float*)argument), 0);
 			break;
 		case CONTAINER_SEEK_ABS:
-			ret = container_ffmpeg_seek(context, (float)*((float*)argument), -1);
+			ret = container_ffmpeg_seek((float)*((float*)argument), -1);
 			break;
 		case CONTAINER_LENGTH:
 			ret = container_ffmpeg_get_length(context, &length);
