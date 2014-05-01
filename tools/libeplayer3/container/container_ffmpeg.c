@@ -104,7 +104,10 @@ volatile static int hasPlayThreadStarted = 0;
 static AVFormatContext*   avContext = NULL;
 volatile static unsigned int isContainerRunning = 0;
 static long long int latestPts = 0;
-static float seek_sec_abs = -1.0, seek_sec_rel = 0.0;
+static float seek_sec_rel = 0.0;
+#if 0
+static float seek_sec_abs = -1.0;
+#endif
 
 /* ***************************** */
 /* Prototypes					 */
@@ -300,6 +303,7 @@ static void FFMPEGThread(Context_t *context) {
 			seek_target = ((((currentVideoPts > 0) ? currentVideoPts : currentAudioPts) / 90000.0) + seek_sec_rel) * AV_TIME_BASE;
 	    	}
 			seek_sec_rel = 0.0;
+#if 0
 		} else if (seek_sec_abs >= 0.0) {
 			if (avContext->iformat->flags & AVFMT_TS_DISCONT) {
 				float br = (avContext->bit_rate) ? avContext->bit_rate / 8.0 : 180000.0;
@@ -309,6 +313,7 @@ static void FFMPEGThread(Context_t *context) {
 				seek_target = seek_sec_abs * AV_TIME_BASE;
 			}
 			seek_sec_abs = -1.0;
+#endif
 		} else if (context->playback->BackWard && av_gettime() >= showtime) {
 			context->output->Command(context, OUTPUT_CLEAR, "video");
 
@@ -1124,10 +1129,14 @@ static int container_ffmpeg_stop(Context_t *context) {
 
 static int container_ffmpeg_seek(float sec, int absolute)
 {
+#if 0
 	if (absolute)
 		seek_sec_abs = sec, seek_sec_rel = 0.0;
 	else
 		seek_sec_abs = -1.0, seek_sec_rel = sec;
+#else
+	seek_sec_rel = sec;
+#endif
 	return cERR_CONTAINER_FFMPEG_NO_ERROR;
 }
 
@@ -1283,9 +1292,11 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 		case CONTAINER_SEEK: 
 			ret = container_ffmpeg_seek((float)*((float*)argument), 0);
 			break;
+#if 0
 		case CONTAINER_SEEK_ABS:
 			ret = container_ffmpeg_seek((float)*((float*)argument), -1);
 			break;
+#endif
 		case CONTAINER_LENGTH:
 			ret = container_ffmpeg_get_length(context, &length);
 			*((double*)argument) = (double)length;

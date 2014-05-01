@@ -542,10 +542,11 @@ static int PlaybackSeek(Context_t  *context, float * pos, int absolute) {
         context->playback->isSeeking = 1;
 
         context->output->Command(context, OUTPUT_CLEAR, NULL);
-
+#if 0
 	if (absolute)
         	context->container->selectedContainer->Command(context, CONTAINER_SEEK_ABS, pos);
 	else
+#endif
         	context->container->selectedContainer->Command(context, CONTAINER_SEEK, pos);
 
         context->playback->isSeeking = 0;
@@ -747,10 +748,12 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
         ret = PlaybackSeek(context, (float*)argument, 0);
         break;
     }
+#if 0
     case PLAYBACK_SEEK_ABS: {
         ret = PlaybackSeek(context, (float*)argument, -1);
         break;
     }
+#endif
     case PLAYBACK_PTS: { // 10
         ret = PlaybackPts(context, (unsigned long long int*)argument);
         break;
