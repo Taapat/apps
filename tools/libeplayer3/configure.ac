@@ -6,6 +6,7 @@ TUXBOX_APPS
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_LIBTOOL
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_ARG_ENABLE([multicom406], 
         [AS_HELP_STRING(--enable-multicom406,    enable multicom406 stuff)], 
