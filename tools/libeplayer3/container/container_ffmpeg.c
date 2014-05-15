@@ -364,6 +364,8 @@ static void FFMPEGThread(Context_t *context) {
 
 		AVPacket   packet;
 		av_init_packet(&packet);
+		packet.data = NULL;
+		packet.size = 0;
 
 		int av_res = av_read_frame(avContext, &packet);
 		if (av_res == AVERROR(EAGAIN)) {
