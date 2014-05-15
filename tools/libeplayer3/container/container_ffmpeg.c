@@ -978,6 +978,16 @@ again:
 	avContext = avformat_alloc_context();
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
+	avContext->flags |= AVFMT_FLAG_GENPTS;
+
+	if (strstr(filename, "http://") == filename) {
+		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
+		avContext->max_analyze_duration = 0;
+	}
+	else if (context->playback->noprobe) {
+		ffmpeg_printf(10, "noprobe\n");
+		avContext->max_analyze_duration = 1;
+	}
 
 	ret = avformat_open_input(&avContext, filename, NULL, NULL);
 	if (ret < 0) {
@@ -990,17 +1000,7 @@ again:
 		goto fail;
 	}
 
-	if (strstr(filename, "http://") == filename) {
-		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
-		avContext->max_analyze_duration = 0;
-	}
-	else if (context->playback->noprobe) {
-		ffmpeg_printf(10, "noprobe\n");
-		avContext->max_analyze_duration = 1;
-	}
-
 	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
-	avContext->flags |= AVFMT_FLAG_GENPTS;
 
 	ffmpeg_printf(20, "find_streaminfo\n");
 
