@@ -1,12 +1,12 @@
 lib_LTLIBRARIES = libmme_host.la
 
 if ENABLE_MULTICOM406
-AM_CFLAGS = -Wall -D__LINUX__ -I../../../../driver/include/multicom -I../../../../driver/multicom/src/mme
+AM_CFLAGS = -Wall -D__LINUX__ -I$(DRIVER_TOPDIR)/include/multicom -I$(DRIVER_TOPDIR)/multicom/src/mme
 
 endif
 
 if ENABLE_MULTICOM324
-AM_CFLAGS = -Wall -D__LINUX__ -I $(DRIVER_TOPDIR)/include/multicom -I../../../../driver/multicom/mme
+AM_CFLAGS = -Wall -D__LINUX__ -I $(DRIVER_TOPDIR)/include/multicom -I$(DRIVER_TOPDIR)/multicom/mme
 
 libmme_host_la_SOURCES = \
 	$(DRIVER_TOPDIR)/multicom/mme/mme_linux_user.c \
