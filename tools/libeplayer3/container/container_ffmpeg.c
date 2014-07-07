@@ -103,7 +103,6 @@ static pthread_t PlayThread;
 volatile static int hasPlayThreadStarted = 0;
 static AVFormatContext*   avContext = NULL;
 volatile static unsigned int isContainerRunning = 0;
-static long long int latestPts = 0;
 static float seek_sec_rel = 0.0;
 #if 0
 static float seek_sec_abs = -1.0;
@@ -353,7 +352,6 @@ static void FFMPEGThread(Context_t *context) {
 				bofcount = 1;
 			seek_target = INT64_MIN;
 			restart_audio_resampling = 1;
-			latestPts = 0;
 
 			// flush streams
 			unsigned int i;
@@ -402,9 +400,6 @@ static void FFMPEGThread(Context_t *context) {
 		if (videoTrack && (videoTrack->Id == pid)) {
 			currentVideoPts = videoTrack->pts = pts = calcPts(videoTrack->stream, packet.pts);
 
-			if ((currentVideoPts > latestPts) && (currentVideoPts != INVALID_PTS_VALUE))
-				latestPts = currentVideoPts;
-
 			avOut.data	 = packet_data;
 			avOut.len	 = packet_size;
 			avOut.pts	 = pts;
@@ -421,9 +416,6 @@ static void FFMPEGThread(Context_t *context) {
 			}
 		} else if (audioTrack && (audioTrack->Id == pid) && !context->playback->BackWard) {
 			currentAudioPts = audioTrack->pts = pts = calcPts(audioTrack->stream, packet.pts);
-
-			if ((currentAudioPts > latestPts) && (!videoTrack))
-				latestPts = currentAudioPts;
 
 			ffmpeg_printf(200, "AudioTrack index = %d\n",pid);
 			if (audioTrack->inject_as_pcm == 1)
@@ -597,9 +589,6 @@ static void FFMPEGThread(Context_t *context) {
 			float duration=3.0;
 			ffmpeg_printf(100, "subtitleTrack->stream %p \n", subtitleTrack->stream);
 			pts = calcPts(subtitleTrack->stream, packet.pts);
-
-			if ((pts > latestPts) && (!videoTrack) && (!audioTrack))
-				latestPts = pts;
 
 			/*Hellmaster1024: in mkv the duration for ID_TEXT is stored in convergence_duration */
 			ffmpeg_printf(20, "Packet duration %d\n", packet.duration);
@@ -1041,7 +1030,6 @@ again:
 	}
 
 	terminating = 0;
-	latestPts = 0;
 	ret = container_ffmpeg_update_tracks(context, filename);
 	isContainerRunning = 1;
 	return ret;
@@ -1314,9 +1302,6 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 			break;
 		case CONTAINER_STATUS:
 			*((int*)argument) = hasPlayThreadStarted;
-			break;
-		case CONTAINER_LAST_PTS:
-			*((long long int*)argument) = latestPts;
 			break;
 		default:
 			ffmpeg_err("ContainerCmd %d not supported!\n", command);
