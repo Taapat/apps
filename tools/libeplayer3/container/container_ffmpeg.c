@@ -982,11 +982,11 @@ again:
 
 	if (strstr(filename, "http://") == filename) {
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
-		avContext->max_analyze_duration = 0;
+		avContext->max_analyze_duration2 = 0;
 	}
 	else if (context->playback->noprobe) {
 		ffmpeg_printf(10, "noprobe\n");
-		avContext->max_analyze_duration = 1;
+		avContext->max_analyze_duration2 = 1;
 	}
 
 	ret = avformat_open_input(&avContext, filename, NULL, NULL);
