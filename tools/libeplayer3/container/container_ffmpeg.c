@@ -816,7 +816,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 
 				if(!strncmp(encoding, "A_AAC", 5)) {
 					ffmpeg_printf(10,"stream->codec->extradata_size %d\n", stream->codec->extradata_size);
-					if (stream->codec->extradata_size == 0) {
+					if (stream->codec->extradata_size <= 2) {
 						ffmpeg_printf(10, "use resampling for AAC\n");
 						encoding = "A_IPCM";
 						track.Encoding = "A_IPCM";
