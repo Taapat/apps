@@ -31,7 +31,7 @@
 /* ***************************** */
 /* Makros/Constants              */
 /* ***************************** */
-#define TRACKWRAP 20
+#define TRACKWRAP 50
 
 #define MGR_DEBUG
 #ifdef MGR_DEBUG
