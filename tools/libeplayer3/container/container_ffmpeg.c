@@ -462,7 +462,8 @@ static void FFMPEGThread(Context_t *context) {
 					if (!swr) {
 						int in_rate = c->sample_rate;
 						// rates in descending order
-						int rate[] = { 192000, 176400, 96000, 88200, 48000, 44100, 0 };
+						int rates[] = { 192000, 176400, 96000, 88200, 48000, 44100, 0 };
+						int *rate = rates;
 						
 						while (*rate && ((*rate / in_rate) * in_rate != *rate) && (in_rate / *rate) * *rate != in_rate)
 							rate++;
