@@ -464,9 +464,11 @@ static void FFMPEGThread(Context_t *context) {
 						// rates in descending order
 						int rates[] = { 192000, 176400, 96000, 88200, 48000, 44100, 0 };
 						int i=0;
-						// find the next equal or smallest rate
-						while(rates[i] && in_rate < rates[i]) i++;
-						if (rates[i]) out_sample_rate = rates[i];
+						
+						while (*rate && ((*rate / in_rate) * in_rate != *rate) && (in_rate / *rate) * *rate != in_rate)
+							rate++;
+						out_sample_rate = *rate ? *rate : 44100;
+						
 						swr = swr_alloc();
 						out_channels = c->channels;
 						if (c->channel_layout == 0) {
@@ -483,8 +485,8 @@ static void FFMPEGThread(Context_t *context) {
 						av_opt_set_int(swr, "out_channel_layout",	out_channel_layout,	0);
 						av_opt_set_int(swr, "in_sample_rate",		c->sample_rate,		0);
 						av_opt_set_int(swr, "out_sample_rate",		out_sample_rate,	0);
-						av_opt_set_int(swr, "in_sample_fmt",		c->sample_fmt,		0);
-						av_opt_set_int(swr, "out_sample_fmt",		AV_SAMPLE_FMT_S16,	0);
+						av_opt_set_sample_fmt(swr, "in_sample_fmt",		c->sample_fmt,		0);
+						av_opt_set_sample_fmt(swr, "out_sample_fmt",		AV_SAMPLE_FMT_S16,	0);
 
 						e = swr_init(swr);
 						if (e < 0) {
