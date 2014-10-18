@@ -1,11 +1,11 @@
-AC_INIT(tuxbox-apps-misc-tools,0.0.1,,tuxbox-misc-tools)
-AM_INIT_AUTOMAKE(tuxbox-misc-tools,0.0.1)
-
-TUXBOX_APPS
+AC_INIT(tuxbox-eplayer4,0.0.1,,eplayer4)
+AM_INIT_AUTOMAKE(eplayer4,0.0.1)
 
 AC_PROG_CC
 AC_PROG_CXX
 AM_PROG_LIBTOOL
+PKG_CHECK_MODULES(GST, [gstreamer-0.10])
+CFLAGS="$CFLAGS $GST_CFLAGS"
 
 AC_ARG_ENABLE([multicom406], 
         [AS_HELP_STRING(--enable-multicom406,    enable multicom406 stuff)], 
