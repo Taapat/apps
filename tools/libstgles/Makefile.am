@@ -4,9 +4,7 @@ AM_CFLAGS = -Wall -g0 -Os -ftracer -fomit-frame-pointer -fvisibility=hidden -ldi
 	-Iincludes \
 	-Iincludes/EGL \
 	-Iincludes/GLES \
-	-I../../../../../tufsbox/cdkroot/usr/include/ \
-	-I../../../../../tufsbox/cdkroot/usr/include/directfb/
-
+	$(DIRECTFB_CFLAGS)
 
 libstgles_la_SOURCES = \
 	api/eglcore.c \
