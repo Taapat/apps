@@ -192,9 +192,9 @@ long long int calcPts(AVStream* stream, int64_t pts)
 	if(pts == AV_NOPTS_VALUE)
 		return INVALID_PTS_VALUE;
 
-	pts = 90000 * (double)pts * stream->time_base.num / stream->time_base.den;
+	pts = av_rescale(90000ll * stream->time_base.num, pts, stream->time_base.den);
 	if(avContext->start_time != AV_NOPTS_VALUE)
-		pts -= 90000 * avContext->start_time / AV_TIME_BASE;
+		pts -= av_rescale(90000ll, avContext->start_time, AV_TIME_BASE);
 
 	if (pts < 0)
 		return INVALID_PTS_VALUE;
@@ -313,11 +313,11 @@ static void FFMPEGThread(Context_t *context) {
 			}
 			seek_sec_abs = -1.0;
 #endif
-		} else if (context->playback->BackWard && av_gettime() >= showtime) {
+		} else if (context->playback->BackWard && av_gettime_relative() >= showtime) {
 			context->output->Command(context, OUTPUT_CLEAR, "video");
 
 			if (bofcount == 1) {
-				showtime = av_gettime();
+				showtime = av_gettime_relative();
 				usleep(100000);
 				continue;
 			}
@@ -337,7 +337,7 @@ static void FFMPEGThread(Context_t *context) {
 			} else {
 				seek_target = ((((currentVideoPts > 0) ? currentVideoPts : currentAudioPts) / 90000.0) + context->playback->Speed * 8) * AV_TIME_BASE;;
 			}
-			showtime = av_gettime() + 300000;	//jump back every 300ms
+			showtime = av_gettime_relative() + 300000;	//jump back every 300ms
 		} else {
 			bofcount = 0;
 		}
@@ -472,12 +472,13 @@ static void FFMPEGThread(Context_t *context) {
 						if (c->channel_layout == 0) {
 							// FIXME -- need to guess, looks pretty much like a bug in the FFMPEG WMA decoder
 							c->channel_layout = AV_CH_LAYOUT_STEREO;
+						}
+						out_channel_layout = c->channel_layout;
 						// player2 won't play mono
-						} else if (out_channel_layout == AV_CH_LAYOUT_MONO) {
+						if (out_channel_layout == AV_CH_LAYOUT_MONO) {
 							out_channel_layout = AV_CH_LAYOUT_STEREO;
 							out_channels = 2;
 						}
-						out_channel_layout = c->channel_layout;
 
 						av_opt_set_int(swr, "in_channel_layout",	c->channel_layout,	0);
 						av_opt_set_int(swr, "out_channel_layout",	out_channel_layout,	0);
@@ -811,15 +812,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 				track.type = eTypeES;
 
 				if(!strncmp(encoding, "A_AAC", 5)) {
-					ffmpeg_printf(10,"stream->codec->extradata_size %d\n", stream->codec->extradata_size);
-					if (stream->codec->extradata_size <= 2) {
-						ffmpeg_printf(10, "use resampling for AAC\n");
-						encoding = "A_IPCM";
-						track.Encoding = "A_IPCM";
-					}
-					else {
-						ffmpeg_printf(10,"Create AAC ExtraData\n");
-						Hexdump(stream->codec->extradata, stream->codec->extradata_size);
 
 /* extradata
 13 10 56 e5 9d 48 00 (anderen cops)
@@ -836,19 +828,31 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 	0000000
 */
 
-						unsigned int object_type = 2; // LC
-						unsigned int sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
-						unsigned int chan_config = stream->codec->channels;
-						if(stream->codec->extradata_size >= 2) {
-							object_type = stream->codec->extradata[0] >> 3;
-							sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
-								+ (stream->codec->extradata[1] >> 7);
-							chan_config = (stream->codec->extradata[1] >> 3) && 0xf;
-						}
+					unsigned int extradata_size = stream->codec->extradata_size;
+					unsigned int object_type = 2; // LC
+					unsigned int sample_index = aac_get_sample_rate_index(stream->codec->sample_rate);
+					unsigned int chan_config = stream->codec->channels;
 
-						ffmpeg_printf(10,"aac object_type %d\n", object_type);
-						ffmpeg_printf(10,"aac sample_index %d\n", sample_index);
-						ffmpeg_printf(10,"aac chan_config %d\n", chan_config);
+					if(extradata_size >= 2) {
+						object_type = stream->codec->extradata[0] >> 3;
+						sample_index = ((stream->codec->extradata[0] & 0x7) << 1)
+							+ (stream->codec->extradata[1] >> 7);
+						chan_config = (stream->codec->extradata[1] >> 3) && 0xf;
+					}
+
+					ffmpeg_printf(10,"aac extradata_size %d\n", extradata_size);
+					ffmpeg_printf(10,"aac object_type %d\n", object_type);
+					ffmpeg_printf(10,"aac sample_index %d\n", sample_index);
+					ffmpeg_printf(10,"aac chan_config %d\n", chan_config);
+
+					if ((extradata_size <= 1) || (object_type == 1)) {
+						ffmpeg_printf(10, "use resampling for AAC\n");
+						encoding = "A_IPCM";
+						track.Encoding = "A_IPCM";
+					}
+					else {
+						ffmpeg_printf(10,"Create AAC ExtraData\n");
+						Hexdump(stream->codec->extradata, extradata_size);
 
 						object_type -= 1; // Cause of ADTS
 
