@@ -234,6 +234,12 @@ int subtitle_ParseSRT (char **Line) {
     replace_all(Line, "Ä", "Ae");
     replace_all(Line, "Ü", "Ue");
     replace_all(Line, "ß", "ss");
+    replace_all(Line, "<u>", "");
+    replace_all(Line, "<i>", "");
+    replace_all(Line, "<b>", "");
+    replace_all(Line, "</u>", "");
+    replace_all(Line, "</i>", "");
+    replace_all(Line, "</b>", "");
 
     subtitle_printf(10, "<- Text=%s\n", *Line);
 
@@ -261,6 +267,12 @@ int subtitle_ParseSSA (char **Line) {
     replace_all(Line, "Ä", "Ae");
     replace_all(Line, "Ü", "Ue");
     replace_all(Line, "ß", "ss");
+    replace_all(Line, "<u>", "");
+    replace_all(Line, "<i>", "");
+    replace_all(Line, "<b>", "");
+    replace_all(Line, "</u>", "");
+    replace_all(Line, "</i>", "");
+    replace_all(Line, "</b>", "");
 
     subtitle_printf(10, "<- Text=%s\n", *Line);
 
