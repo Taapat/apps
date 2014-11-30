@@ -172,7 +172,7 @@ int main(int argc,char* argv[]) {
     out.destination   = lfb;
     out.destStride    = stride;
 
-    player->output->subtitle->Command(player, (OutputCmd_t)OUTPUT_SET_SUBTITLE_OUTPUT, (void*) &out);
+    player->output->subtitle->Command(player, OUTPUT_SET_SUBTITLE_OUTPUT, &out);
 
     if(player->playback->Command(player, PLAYBACK_OPEN, file) < 0)
         return 10;
