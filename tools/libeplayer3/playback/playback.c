@@ -109,11 +109,9 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
 
     context->playback->uri = strdup(uri);
 
-    context->playback->isFile = 0;
     context->playback->isHttp = 0;
 
     if (!strncmp("file://", uri, 7) || !strncmp("myts://", uri, 7)) {
-	    context->playback->isFile = 1;
             if (!strncmp("myts://", uri, 7)) {
                 memcpy(context->playback->uri, "file", 4);
                 context->playback->noprobe = 1;

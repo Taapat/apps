@@ -12,9 +12,7 @@ typedef struct PlaybackHandler_s {
 
     int fd;
 
-    unsigned char isFile;
     unsigned char isHttp;
-
     unsigned char isPlaying;
     unsigned char isPaused;
     unsigned char isForwarding;
