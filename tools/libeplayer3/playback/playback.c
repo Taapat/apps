@@ -110,13 +110,13 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
     context->playback->uri = strdup(uri);
 
     context->playback->isHttp = 0;
+    context->playback->noprobe = 0;
 
     if (!strncmp("file://", uri, 7) || !strncmp("myts://", uri, 7)) {
             if (!strncmp("myts://", uri, 7)) {
                 memcpy(context->playback->uri, "file", 4);
                 context->playback->noprobe = 1;
-            } else
-                context->playback->noprobe = 0;
+            }
 
             extension = getExtension(context->playback->uri+7);
             if(!extension)
