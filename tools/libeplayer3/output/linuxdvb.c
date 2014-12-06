@@ -681,34 +681,30 @@ int LinuxDvbClear(Context_t  *context __attribute__((unused)), char * type) {
 }
 
 int LinuxDvbPts(Context_t  *context __attribute__((unused)), unsigned long long int* pts) {
-    int ret = cERR_LINUXDVB_ERROR;
-    
-    linuxdvb_printf(50, "\n");
+	int ret = cERR_LINUXDVB_ERROR;
+	linuxdvb_printf(50, "\n");
 
-    //!!!! These dvb commands are not supportde on sh4, at least on amiko alien
-    // pts is a non writting requests and can be done in parallel to other requests
-    //getLinuxDVBMutex(FILENAME, __FUNCTION__,__LINE__);
-
-    if (videofd > -1 && !ioctl(videofd, VIDEO_GET_PTS, (void*)&sCURRENT_PTS))
-	ret = cERR_LINUXDVB_NO_ERROR;
-    else
-	linuxdvb_err("VIDEO_GET_PTS: %d (%s)\n", errno, strerror(errno));
-
-    if (ret != cERR_LINUXDVB_NO_ERROR) {
-	if (audiofd > -1 && !ioctl(audiofd, AUDIO_GET_PTS, (void*)&sCURRENT_PTS))
+	if (videofd > -1 && !ioctl(videofd, VIDEO_GET_PTS, (void*)&sCURRENT_PTS))
+	{
 		ret = cERR_LINUXDVB_NO_ERROR;
+	}
 	else
-		linuxdvb_err("AUDIO_GET_PTS: %d (%s)\n", errno, strerror(errno));
+	{
+		linuxdvb_err("VIDEO_GET_PTS: %d (%s)\n", errno, strerror(errno));
+
+		if (audiofd > -1 && !ioctl(audiofd, AUDIO_GET_PTS, (void*)&sCURRENT_PTS))
+		{
+			ret = cERR_LINUXDVB_NO_ERROR;
+		}
+		else
+		{
+			linuxdvb_err("AUDIO_GET_PTS: %d (%s)\n", errno, strerror(errno));
+			sCURRENT_PTS = 0;
+		}
     }
 
-    if (ret != cERR_LINUXDVB_NO_ERROR)
-        sCURRENT_PTS = 0;
-
-    *((unsigned long long int *)pts)=(unsigned long long int)sCURRENT_PTS;
-
-    //releaseLinuxDVBMutex(FILENAME, __FUNCTION__,__LINE__);
-
-    return ret;
+	*((unsigned long long int *)pts) = (unsigned long long int)sCURRENT_PTS;
+	return ret;
 }
 
 int LinuxDvbSwitch(Context_t  *context, char * type) {
