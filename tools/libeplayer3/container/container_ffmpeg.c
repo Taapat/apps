@@ -192,9 +192,9 @@ long long int calcPts(AVStream* stream, int64_t pts)
 	if(pts == AV_NOPTS_VALUE)
 		return INVALID_PTS_VALUE;
 
-	pts = av_rescale(90000ll * stream->time_base.num, pts, stream->time_base.den);
+	pts = 90000 * (double)pts * stream->time_base.num / stream->time_base.den;
 	if(avContext->start_time != AV_NOPTS_VALUE)
-		pts -= av_rescale(90000ll, avContext->start_time, AV_TIME_BASE);
+		pts -= 90000 * avContext->start_time / AV_TIME_BASE;
 
 	if (pts < 0)
 		return INVALID_PTS_VALUE;
