@@ -94,25 +94,27 @@ static void SupervisorThread(Context_t *context) {
 
 static int PlaybackStop(Context_t  *context);
 
-static int PlaybackOpen(Context_t  *context, char * uri) {
-    if (context->playback->isPlaying)
+static int PlaybackOpen(Context_t  *context, char * uri)
+{
+	if (context->playback->isPlaying)
 	PlaybackStop(context);
 
-    playback_printf(10, "URI=%s\n", uri);
+	playback_printf(10, "URI=%s\n", uri);
 
-    if (context->playback->isPlaying) { // shouldn't happen
-        playback_err("playback already running\n");
-        return cERR_PLAYBACK_ERROR;
-    }
+	if (context->playback->isPlaying) // shouldn't happen
+	{
+		playback_err("playback already running\n");
+		return cERR_PLAYBACK_ERROR;
+	}
 
-    char * extension = NULL;
+	char * extension = NULL;
 
-    context->playback->uri = strdup(uri);
+	context->playback->uri = strdup(uri);
 
-    context->playback->isHttp = 0;
-    context->playback->noprobe = 0;
+	context->playback->isHttp = 0;
+	context->playback->noprobe = 0;
 
-	if (!strncmp("myts://", uri, 7)) 
+	if (!strncmp("myts://", uri, 7))
 	{
 		memcpy(context->playback->uri, "file", 4);
 		context->playback->noprobe = 1;
@@ -121,46 +123,45 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
 	if (context->container && context->container->assContainer)
 		context->container->assContainer->Command(context, CONTAINER_INIT, NULL);
 
-	if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9) || !strncmp("ftp://", uri, 6)) {
-            if (!strncmp("myts://", uri, 7)) {
-                memcpy(context->playback->uri, "file", 4);
-                context->playback->noprobe = 1;
-            }
+	if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9) || !strncmp("ftp://", uri, 6))
+	{
+		extension = getExtension(context->playback->uri+7);
+		if (!extension)
+			return cERR_PLAYBACK_ERROR;
 
-            extension = getExtension(context->playback->uri+7);
-            if(!extension)
-                return cERR_PLAYBACK_ERROR;
+		if (context->container && context->container->textSrtContainer)
+			context->container->textSrtContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
 
-            if (context->container && context->container->textSrtContainer)
-                context->container->textSrtContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
+		if (context->container && context->container->textSsaContainer)
+			context->container->textSsaContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
+	}
+	else if (strstr(uri, "://"))
+	{
+		context->playback->isHttp = 1;
+		extension = "mp3";
+		if (!strncmp("mms://", uri, 6)) // mms is in reality called rtsp, and ffmpeg expects this
+		{
+			char * tUri = (char*)malloc(strlen(uri) + 2);
+			strncpy(tUri+1, uri, strlen(uri)+1);
+			strncpy(tUri, "rtsp", 4);
+			free(context->playback->uri);
+			context->playback->uri = tUri;
+		}
+	}
+	else
+	{
+		playback_err("Unknown stream (%s)\n", uri);
+		return cERR_PLAYBACK_ERROR;
+	}
 
-            if (context->container && context->container->textSsaContainer)
-                context->container->textSsaContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
+	if ((context->container->Command(context, CONTAINER_ADD, extension) < 0)
+		||  (!context->container->selectedContainer)
+		||  (context->container->selectedContainer->Command(context, CONTAINER_INIT, context->playback->uri) < 0))
+		return cERR_PLAYBACK_ERROR;
 
-    } else if (strstr(uri, "://")) {
-            context->playback->isHttp = 1;
-            extension = "mp3";
-            if (!strncmp("mms://", uri, 6)) {
-                // mms is in reality called rtsp, and ffmpeg expects this
-                char * tUri = (char*)malloc(strlen(uri) + 2);
-                strncpy(tUri+1, uri, strlen(uri)+1);
-                strncpy(tUri, "rtsp", 4);
-                free(context->playback->uri);
-                context->playback->uri = tUri;
-            }
-    } else {
-	playback_err("Unknown stream (%s)\n", uri);
-	return cERR_PLAYBACK_ERROR;
-    }
+	playback_printf(10, "exiting with value 0\n");
 
-    if ((context->container->Command(context, CONTAINER_ADD, extension) < 0)
-    ||  (!context->container->selectedContainer)
-    ||  (context->container->selectedContainer->Command(context, CONTAINER_INIT, context->playback->uri) < 0))
-	return cERR_PLAYBACK_ERROR;
-
-    playback_printf(10, "exiting with value 0\n");
-
-    return cERR_PLAYBACK_NO_ERROR;
+	return cERR_PLAYBACK_NO_ERROR;
 }
 
 static int PlaybackClose(Context_t  *context) {
