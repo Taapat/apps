@@ -121,7 +121,7 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
 	if (context->container && context->container->assContainer)
 		context->container->assContainer->Command(context, CONTAINER_INIT, NULL);
 
-    if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9)) || !strncmp("ftp://", uri, 6)) {
+	if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9) || !strncmp("ftp://", uri, 6)) {
             if (!strncmp("myts://", uri, 7)) {
                 memcpy(context->playback->uri, "file", 4);
                 context->playback->noprobe = 1;
