@@ -112,7 +112,16 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
     context->playback->isHttp = 0;
     context->playback->noprobe = 0;
 
-    if (!strncmp("file://", uri, 7) || !strncmp("myts://", uri, 7)) {
+	if (!strncmp("myts://", uri, 7)) 
+	{
+		memcpy(context->playback->uri, "file", 4);
+		context->playback->noprobe = 1;
+	}
+
+	if (context->container && context->container->assContainer)
+		context->container->assContainer->Command(context, CONTAINER_INIT, NULL);
+
+    if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9)) || !strncmp("ftp://", uri, 6)) {
             if (!strncmp("myts://", uri, 7)) {
                 memcpy(context->playback->uri, "file", 4);
                 context->playback->noprobe = 1;
@@ -122,19 +131,15 @@ static int PlaybackOpen(Context_t  *context, char * uri) {
             if(!extension)
                 return cERR_PLAYBACK_ERROR;
 
-            //CHECK FOR SUBTITLES
             if (context->container && context->container->textSrtContainer)
                 context->container->textSrtContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
 
             if (context->container && context->container->textSsaContainer)
                 context->container->textSsaContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
 
-            if (context->container && context->container->assContainer)
-                context->container->assContainer->Command(context, CONTAINER_INIT, NULL);
-
     } else if (strstr(uri, "://")) {
             context->playback->isHttp = 1;
-	    extension = "mp3";
+            extension = "mp3";
             if (!strncmp("mms://", uri, 6)) {
                 // mms is in reality called rtsp, and ffmpeg expects this
                 char * tUri = (char*)malloc(strlen(uri) + 2);
