@@ -127,7 +127,10 @@ static int PlaybackOpen(Context_t  *context, char * uri)
 	{
 		extension = getExtension(context->playback->uri+7);
 		if (!extension)
-			return cERR_PLAYBACK_ERROR;
+		{
+			playback_printf(1, "Extension not found, use mp3\n");
+			extension = "mp3";
+		}
 
 		if (context->container && context->container->textSrtContainer)
 			context->container->textSrtContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
