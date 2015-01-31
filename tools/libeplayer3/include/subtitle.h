@@ -36,7 +36,7 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 static inline unsigned char* text_to_ass(char *text, long long int pts, double duration)
 {
      char buf[2048];
-     unsigned int x,pos=0,len=0;
+     unsigned int x,pos=0,len=0, comma = 0;
      if(text == NULL) return NULL;
      
      len=strlen(text);
@@ -44,7 +44,20 @@ static inline unsigned char* text_to_ass(char *text, long long int pts, double d
          if(text[x]=='\n'){
              buf[pos++]='\\';
              buf[pos++]='N';
-         }else if(text[x]!='\r')buf[pos++]=text[x];
+         }
+		else if (text[x] != '\r')
+		{
+			buf[pos++] = text[x];
+			if ((text[x] == ',') && (comma < 32))
+			{
+				comma++;
+				if ((comma > 5) && (text[x-1] == ',')) //It seems that this is already ass block, text starts here
+				{
+					pos = 0;
+					comma = 32;
+				}
+			}
+		}
      }
      buf[pos++]='\0';
      len = 80 + strlen(buf);
