@@ -35,16 +35,18 @@ Format: Marked, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
 static inline unsigned char* text_to_ass(char *text, long long int pts, double duration)
 {
-     char buf[2048];
-     unsigned int x,pos=0,len=0, comma = 0;
-     if(text == NULL) return NULL;
-     
-     len=strlen(text);
-     for(x=0;x<len;x++){
-         if(text[x]=='\n'){
-             buf[pos++]='\\';
-             buf[pos++]='N';
-         }
+	char buf[2048];
+	unsigned int x, pos = 0,len = 0, comma = 0;
+	if(text == NULL) return NULL;
+
+	len=strlen(text);
+	for (x = 0; x < len; x++)
+	{
+		if(text[x]=='\n')
+		{
+			buf[pos++]='\\';
+			buf[pos++]='N';
+		}
 		else if (text[x] != '\r')
 		{
 			buf[pos++] = text[x];
@@ -58,86 +60,88 @@ static inline unsigned char* text_to_ass(char *text, long long int pts, double d
 				}
 			}
 		}
-     }
-     buf[pos++]='\0';
-     len = 80 + strlen(buf);
-     long long int end_pts = pts + (duration * 1000.0);
-     char* line = (char*)malloc( sizeof(char) * len );
-     int sc = pts / 10;
-     int ec = end_pts  / 10;
-     int sh, sm, ss, eh, em, es;
-     sh = sc/360000;  sc -= 360000*sh;
-     sm = sc/  6000;  sc -=   6000*sm;
-     ss = sc/   100;  sc -=    100*ss;
-     eh = ec/360000;  ec -= 360000*eh;
-     em = ec/  6000;  ec -=   6000*em;
-     es = ec/   100;  ec -=    100*es;
-     snprintf(line,len,"Dialogue: Marked=0,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,Default,NTP,0000,0000,0000,!Effect,%s\n",
-                 sh, sm, ss, sc, eh, em, es, ec, buf);
+	}
 
-     return (unsigned char*)line;
+	buf[pos++] = '\0';
+	len = 80 + strlen(buf);
+
+	long long int end_pts = pts + (duration * 1000.0);
+	char* line = (char*)malloc( sizeof(char) * len );
+	int sc = pts / 10;
+	int ec = end_pts  / 10;
+	int sh, sm, ss, eh, em, es;
+
+	sh = sc/360000;  sc -= 360000*sh;
+	sm = sc/  6000;  sc -=   6000*sm;
+	ss = sc/   100;  sc -=    100*ss;
+	eh = ec/360000;  ec -= 360000*eh;
+	em = ec/  6000;  ec -=   6000*em;
+	es = ec/   100;  ec -=    100*es;
+	snprintf(line,len,"Dialogue: Marked=0,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,Default,NTP,0000,0000,0000,!Effect,%s\n",
+		sh, sm, ss, sc, eh, em, es, ec, buf);
+
+	return (unsigned char*)line;
 
 }
 
 typedef enum
 {
-    eSub_Gfx,
-    eSub_Txt
+	eSub_Gfx,
+	eSub_Txt
 } SubType_t;
-
 
 typedef struct
 {
-    unsigned char* data;
-    int            len;
+	unsigned char* data;
+	int            len;
 } SubText_t;
 
 typedef struct
 {
-    unsigned char* data;
-    unsigned int   Width;
-    unsigned int   Height;
-    unsigned int   Stride;
-    unsigned int   x;
-    unsigned int   y;
-    unsigned int   color;
+	unsigned char* data;
+	unsigned int   Width;
+	unsigned int   Height;
+	unsigned int   Stride;
+	unsigned int   x;
+	unsigned int   y;
+	unsigned int   color;
 } SubGfx_t;
 
 typedef struct
 {
-    SubType_t      type;
-    long long int  pts;
-    float          duration;
-    
-    union
-    {
-        SubText_t text;
-        SubGfx_t  gfx;
-    } u;
+	SubType_t      type;
+	long long int  pts;
+	float          duration;
+
+	union
+	{
+		SubText_t text;
+		SubGfx_t  gfx;
+	} u;
 } SubtitleOut_t;
 
 typedef struct
 {
-    unsigned char* data;
-    int            len;
+	unsigned char* data;
+	int            len;
 
-    unsigned char* extradata;
-    int            extralen;
-    
-    long long int  pts;
-    float          duration;
+	unsigned char* extradata;
+	int            extralen;
+
+	long long int  pts;
+	float          duration;
 } SubtitleData_t;
 
 typedef struct
 {
-    unsigned char* destination;
-    unsigned int   screen_width;
-    unsigned int   screen_height;
-    unsigned int   destStride;
-    
-    void           (*framebufferBlit)();
-    int            shareFramebuffer;
-    int            framebufferFD;
+	unsigned char* destination;
+	unsigned int   screen_width;
+	unsigned int   screen_height;
+	unsigned int   destStride;
+
+	void           (*framebufferBlit)();
+	int            shareFramebuffer;
+	int            framebufferFD;
 } SubtitleOutputDef_t;
 
 #endif
