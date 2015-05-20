@@ -67,6 +67,8 @@ static int PlaybackTerminate(Context_t  *context);
 /* MISC Functions                */
 /* ***************************** */
 
+void libeplayerThreadStop() {} // Tell enigma2 that we stop
+
 /* **************************** */
 /* Supervisor Thread            */
 /* **************************** */
@@ -86,6 +88,7 @@ static void SupervisorThread(Context_t *context) {
 
 	playback_printf(0, "terminating\n");
 	hasThreadStarted = 0;
+	libeplayerThreadStop();
 }
 
 /* ***************************** */
