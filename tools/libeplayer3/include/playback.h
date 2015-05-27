@@ -32,7 +32,6 @@ typedef struct PlaybackHandler_s {
 
     int (* Command) (Context_t *, PlaybackCmd_t, void *);
     char * uri;
-    unsigned char noprobe; /* hack: only minimal probing in av_find_stream_info */
     unsigned long long readCount;
 } PlaybackHandler_t;
 
