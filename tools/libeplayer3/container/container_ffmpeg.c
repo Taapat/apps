@@ -975,9 +975,8 @@ again:
 	avContext->flags |= AVFMT_FLAG_GENPTS;
 
 	if (context->playback->isHttp) {
-		ffmpeg_printf(10, "network stream, no probe\n");
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
-		avContext->max_analyze_duration2 = 1;
+		avContext->max_analyze_duration2 = 1 * AV_TIME_BASE;
 		n = 1;
 	}
 	else {
@@ -997,7 +996,7 @@ again:
 
 	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
 
-	ffmpeg_printf(20, "find_streaminfo\n");
+	ffmpeg_printf(20, "Find_streaminfo\n");
 	ret = avformat_find_stream_info(avContext, NULL);
 
 	if (ret < 0) {
@@ -1005,7 +1004,7 @@ again:
 		if (n) {
 			n = 0;
 			avformat_close_input(&avContext);
-			ffmpeg_err("Try again with probe\n");
+			ffmpeg_err("Try again with default probe size\n");
 			goto again;
 		}
 #ifdef this_is_ok
