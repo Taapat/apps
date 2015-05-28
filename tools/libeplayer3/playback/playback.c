@@ -117,6 +117,7 @@ static int PlaybackOpen(Context_t  *context, char * uri)
 	if (!strncmp("myts://", uri, 7))
 	{
 		memcpy(context->playback->uri, "file", 4);
+		context->playback->isHttp = 1;
 	}
 
 	if (context->container && context->container->assContainer)
