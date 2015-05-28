@@ -937,7 +937,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 static int container_ffmpeg_init(Context_t *context, char * filename)
 {
 	int ret = 0;
-	unsigned int n = 0;
+	unsigned int n = 1;
 
 	ffmpeg_printf(10, ">\n");
 
@@ -974,14 +974,13 @@ again:
 	avContext->interrupt_callback.opaque = context->playback;
 	avContext->flags |= AVFMT_FLAG_GENPTS;
 
-	if (context->playback->isHttp) {
+	if (context->playback->isHttp)
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
+
+	if (context->playback->isHttp && n)
 		avContext->max_analyze_duration2 = 1 * AV_TIME_BASE;
-		n = 1;
-	}
-	else {
+	else
 		avContext->max_analyze_duration2 = 0;
-	}
 
 	ret = avformat_open_input(&avContext, filename, NULL, NULL);
 
