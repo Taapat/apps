@@ -937,6 +937,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 static int container_ffmpeg_init(Context_t *context, char * filename)
 {
 	int ret = 0;
+	unsigned int n = 1;
 
 	ffmpeg_printf(10, ">\n");
 
@@ -973,37 +974,36 @@ again:
 	avContext->interrupt_callback.opaque = context->playback;
 	avContext->flags |= AVFMT_FLAG_GENPTS;
 
-	if (strstr(filename, "http://") == filename) {
+	if (context->playback->isHttp)
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
+
+	if (context->playback->isHttp && n)
+		avContext->max_analyze_duration2 = 1 * AV_TIME_BASE;
+	else
 		avContext->max_analyze_duration2 = 0;
-	}
-	else if (context->playback->noprobe) {
-		ffmpeg_printf(10, "noprobe\n");
-		avContext->max_analyze_duration2 = 1;
-	}
 
 	ret = avformat_open_input(&avContext, filename, NULL, NULL);
+
 	if (ret < 0) {
 		char error[512];
 		ffmpeg_err("avformat_open_input failed %d (%s)\n", ret, filename);
 		av_strerror(ret, error, sizeof error);
 		ffmpeg_err("Cause: %s\n", error);
-
 		ret = cERR_CONTAINER_FFMPEG_OPEN;
 		goto fail;
 	}
 
 	avContext->iformat->flags |= AVFMT_SEEK_TO_PTS;
 
-	ffmpeg_printf(20, "find_streaminfo\n");
-
+	ffmpeg_printf(20, "Find_streaminfo\n");
 	ret = avformat_find_stream_info(avContext, NULL);
+
 	if (ret < 0) {
 		ffmpeg_err("Error avformat_find_stream_info\n");
-		if (context->playback->noprobe) {
-			context->playback->noprobe = 0;
+		if (n) {
+			n = 0;
 			avformat_close_input(&avContext);
-			ffmpeg_err("Try again\n");
+			ffmpeg_err("Try again with default probe size\n");
 			goto again;
 		}
 #ifdef this_is_ok
@@ -1017,7 +1017,7 @@ again:
 	}
 
 	ret = cERR_CONTAINER_FFMPEG_STREAM;
-	unsigned int n;
+
 	for (n = 0; n < avContext->nb_streams; n++) {
 		AVStream *stream = avContext->streams[n];
 		switch (stream->codec->codec_type) {
