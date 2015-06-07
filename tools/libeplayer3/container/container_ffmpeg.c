@@ -972,6 +972,7 @@ again:
 	avContext = avformat_alloc_context();
 
 	if (!avContext) {
+		ffmpeg_err("avformat_alloc_context failed\n");
 		ret = cERR_CONTAINER_FFMPEG_OPEN;
 		goto fail_alloc;
 	}
