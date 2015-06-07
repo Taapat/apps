@@ -970,6 +970,12 @@ static int container_ffmpeg_init(Context_t *context, char * filename)
 
 again:
 	avContext = avformat_alloc_context();
+
+	if (!avContext) {
+		ret = cERR_CONTAINER_FFMPEG_OPEN;
+		goto fail_alloc;
+	}
+
 	avContext->interrupt_callback.callback = interrupt_cb;
 	avContext->interrupt_callback.opaque = context->playback;
 	avContext->flags |= AVFMT_FLAG_GENPTS;
@@ -1040,6 +1046,7 @@ again:
 
 fail:
 	avformat_close_input(&avContext);
+fail_alloc:
 	avformat_network_deinit();
 	return ret;
 }
