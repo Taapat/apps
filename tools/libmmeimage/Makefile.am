@@ -2,7 +2,7 @@ lib_LTLIBRARIES = libmmeimage.la
 
 libmmeimage_la_SOURCES = libmmeimage.c hw_interface.c libmmeimg_jpeg.c
 
-AM_CFLAGS = -Wall -I$(DRIVER_TOPDIR)/include/player2 -I$(DRIVER_TOPDIR)/bpamem -I$(DRIVER_TOPDIR)/include/multicom
+AM_CFLAGS = -Wall -I$(DRIVER_TOPDIR)/multicom-4.0.6/include
 
 libmmeimageincludedir =$(includedir)/libmmeimage
 
