@@ -193,7 +193,7 @@ LIBMMEIMG_ERROR mme_init_transformer(MMEData *data, const char *transformer_name
 
 	do
 	{
-		DEBUG_PRINT( "initializing transformer %s\n", transformer_names[index]);
+		//DEBUG_PRINT( "initializing transformer %s\n", transformer_names[index]);
 		ret = MME_InitTransformer(transformer_names[index], &params, &data->transformer_handle);
 	}
 	while (ret != MME_SUCCESS && transformer_names[++index] != NULL);
@@ -216,7 +216,7 @@ LIBMMEIMG_ERROR mme_deinit_transformer(MMEData *data)
 	if (!data->transformer_handle)
 		return LIBMMEIMG_INVALIDARG;
 
-	DEBUG_PRINT("terminating transformer with handle %d\n", data->transformer_handle);
+	//DEBUG_PRINT("terminating transformer with handle %d\n", data->transformer_handle);
 
 	ret = MME_TermTransformer(data->transformer_handle);
 	if (ret == MME_COMMAND_STILL_EXECUTING)
@@ -240,7 +240,7 @@ LIBMMEIMG_ERROR mme_deinit_transformer(MMEData *data)
 
 LIBMMEIMG_ERROR create_mme_data_buffer(MME_DataBuffer_t **buf, unsigned int flags, void *dstbuf, unsigned long size)
 {
-	DEBUG_PRINT("creating databuffer of size = %d, dstbuf = %x\n", size, dstbuf);
+	//DEBUG_PRINT("creating databuffer of size = %d, dstbuf = %x\n", size, dstbuf);
 	
 	*buf 			     = (MME_DataBuffer_t *)malloc(sizeof(MME_DataBuffer_t));
 	if(!*buf)
@@ -313,7 +313,7 @@ LIBMMEIMG_ERROR mme_start_transformer(MMEData *data, size_t return_params_size, 
 	data->transform_command->DataBuffers_p[0]->ScatterPages_p[0].BytesUsed = 0;
 	data->transform_command->DataBuffers_p[0]->ScatterPages_p[0].FlagsIn = 0;
 	data->transform_command->DataBuffers_p[0]->ScatterPages_p[0].FlagsOut = 0;
-	DEBUG_PRINT("start transformer\n");
+	//DEBUG_PRINT("start transformer\n");
 	
 	/*DEBUG_PRINT("Databuffer dump: StructSize %d, UserData_p 0x%x, Flags %d, StreamNumber %d, NumberOfScatterPages %d, ScatterPages_p 0x%x, ScatterPages_p[0] 0x%x, TotalSize %d, StartOffset %d\n",
 	 	data->transform_command->DataBuffers_p[0]->StructSize, 
@@ -395,7 +395,7 @@ LIBMMEIMG_ERROR mme_send_data(MMEData *data, char *data_content, unsigned long d
 	
 	sem_init(&data->decode_event, 0, 0);
 
-	DEBUG_PRINT("sending %d bytes of data to coproc", data_size);
+	//DEBUG_PRINT("sending %d bytes of data to coproc", data_size);
 
 	if(create_mme_data_buffer(&data_buffer, MME_ALLOCATION_PHYSICAL, data_content, data_size))
 	{
@@ -434,7 +434,7 @@ LIBMMEIMG_ERROR mme_send_data(MMEData *data, char *data_content, unsigned long d
 		return MME_INTERNAL_ERROR;
 	}
 	
-	DEBUG_PRINT("waiting for completion data, \n");
+	//DEBUG_PRINT("waiting for completion data, \n");
 
 	// wait until the decode is complete
 	sem_wait(&data->decode_event);
@@ -455,7 +455,7 @@ LIBMMEIMG_ERROR blit_decoder_result(char *srcmem, unsigned long srcmem_size, cha
 	
 	fd = open("/dev/fb0", O_RDWR);
 	
-	DEBUG_PRINT("blitting result");
+	//DEBUG_PRINT("blitting result");
 	
 	if(fd < 0)
 	{

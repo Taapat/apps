@@ -57,7 +57,7 @@ void jpeg_transformer_callback(MME_Event_t event, MME_Command_t *callback_data, 
 	JPEGD_TransformReturnParams_t *returnparams = (JPEGD_TransformReturnParams_t *)callback_data->CmdStatus.AdditionalInfo_p;
 	MMEData *data = (MMEData *)user_data;
 	
-	DEBUG_PRINT("transformer callback with event: %d - %s\n", event, get_mme_event_string (event));
+	//DEBUG_PRINT("transformer callback with event: %d - %s\n", event, get_mme_event_string (event));
 
 	switch(event)
 	{
@@ -84,9 +84,9 @@ void jpeg_transformer_callback(MME_Event_t event, MME_Command_t *callback_data, 
 				if(callback_data->CmdStatus.AdditionalInfoSize != 0)
 				{
 
-					DEBUG_PRINT("expanded bytes: %d\n", returnparams->bytes_written);
-					DEBUG_PRINT("decode w/h: %dx%d\n", returnparams->decodedImageWidth, returnparams->decodedImageHeight);
-					DEBUG_PRINT("JPEG result code: %d\n", returnparams->ErrorType);
+					//DEBUG_PRINT("expanded bytes: %d\n", returnparams->bytes_written);
+					//DEBUG_PRINT("decode w/h: %dx%d\n", returnparams->decodedImageWidth, returnparams->decodedImageHeight);
+					//DEBUG_PRINT("JPEG result code: %d\n", returnparams->ErrorType);
 
 					data->decode_success = 1;
 					sem_post(&data->decode_event);
@@ -97,7 +97,7 @@ void jpeg_transformer_callback(MME_Event_t event, MME_Command_t *callback_data, 
 		}
 		case MME_DATA_UNDERFLOW_EVT:
 		{
-			DEBUG_PRINT("data underflow (this is normal if it only occurs once)\n");
+			//DEBUG_PRINT("data underflow (this is normal if it only occurs once)\n");
 			break;
 		}
 		
@@ -177,7 +177,7 @@ LIBMMEIMG_ERROR decode_jpeg_noalloc(FILE *fp, unsigned int original_width, unsig
 	
 	pre_scale(original_width, original_height, dst_width, dst_height, &pre_scaled_width, &pre_scaled_height, &removeright, &removebottom);
 	
-	DEBUG_PRINT("pre-scaling to width %d height %d from width %d height %d, macro block limit border width = %d, height = %d\n", pre_scaled_width, pre_scaled_height, original_width, original_height, removeright, removebottom);
+	//DEBUG_PRINT("pre-scaling to width %d height %d from width %d height %d, macro block limit border width = %d, height = %d\n", pre_scaled_width, pre_scaled_height, original_width, original_height, removeright, removebottom);
 	
 	fd_bpa = open("/dev/bpamem0", O_RDWR);
 	
@@ -329,7 +329,7 @@ LIBMMEIMG_ERROR decode_jpeg_noalloc(FILE *fp, unsigned int original_width, unsig
 			*(dest_data + i) = *(decode_surface + pre_scaled_width * pre_scaled_height * 2 + i);
 	}
 	
-	DEBUG_PRINT("JPEG decode finished");
+	//DEBUG_PRINT("JPEG decode finished");
 	munmap(decode_surface, bpa_data.mem_size);
 	ioctl(fd_bpa, BPAMEMIO_FREEMEM);
 	close(fd_bpa);
