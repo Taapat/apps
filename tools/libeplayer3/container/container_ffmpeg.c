@@ -591,18 +591,14 @@ static void FFMPEGThread(Context_t *context) {
 			ffmpeg_printf(100, "subtitleTrack->stream %p \n", subtitleTrack->stream);
 			Subtitlepts = calcPts(subtitleTrack->stream, packet.pts);
 
-			/*Hellmaster1024: in mkv the duration for ID_TEXT is stored in convergence_duration */
-			ffmpeg_printf(20, "Packet duration %d\n", packet.duration);
-			ffmpeg_printf(20, "Packet convergence_duration %lld\n", packet.convergence_duration);
+			ffmpeg_printf(20, "Packet duration %lld\n", packet.duration);
 
-			if(packet.duration != 0) // FIXME: packet.duration is 32 bit, AV_NOPTS_VALUE is 64 bit --martii
+			if(packet.duration != 0)
 				duration=((float)packet.duration)/1000.0;
-			else if(packet.convergence_duration != 0 && packet.convergence_duration != AV_NOPTS_VALUE )
-				duration=((float)packet.convergence_duration)/1000.0;
 			else if(((AVStream*)subtitleTrack->stream)->codec->codec_id == AV_CODEC_ID_SSA)
 			{
-				/*Hellmaster1024 if the duration is not stored in packet.duration or
-				  packet.convergence_duration we need to calculate it any other way, for SSA it is stored in
+				/*Hellmaster1024 if the duration is not stored in packet.duration
+				  we need to calculate it any other way, for SSA it is stored in
 				  the Text line*/
 				duration = getDurationFromSSALine(packet_data);
 			} else {
