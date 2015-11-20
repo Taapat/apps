@@ -367,12 +367,12 @@ static void FFMPEGThread(Context_t *context) {
 
 		int av_res = av_read_frame(avContext, &packet);
 		if (av_res == AVERROR(EAGAIN)) {
-			av_free_packet(&packet);
+			av_packet_unref(&packet);
 			continue;
 		}
 		if (av_res) {		// av_read_frame failed
 			ffmpeg_err("no data ->end of file reached ?\n");
-			av_free_packet(&packet);
+			av_packet_unref(&packet);
 			break;		// while
 		}
 		uint8_t *packet_data = packet.data;
@@ -682,7 +682,7 @@ static void FFMPEGThread(Context_t *context) {
 			} /* duration */
 		}
 
-		av_free_packet(&packet);
+		av_packet_unref(&packet);
 	}/* while */
 
 	if (context && context->playback && context->output && context->playback->abortRequested)
