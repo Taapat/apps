@@ -791,7 +791,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 				else
 					track.TimeScale = 1000;
 
-				ffmpeg_printf(10, "bit_rate = %lld\n",stream->codec->bit_rate);
+				ffmpeg_printf(10, "bit_rate = %d\n",stream->codec->bit_rate);
 				ffmpeg_printf(10, "flags = %d\n",stream->codec->flags);
 				ffmpeg_printf(10, "frame_bits = %d\n",stream->codec->frame_bits);
 				ffmpeg_printf(10, "time_base.den %d\n",stream->time_base.den);
@@ -985,9 +985,9 @@ again:
 		avContext->flags |= AVFMT_FLAG_NONBLOCK | AVIO_FLAG_NONBLOCK | AVFMT_NO_BYTE_SEEK;
 
 	if (context->playback->isHttp && n)
-		avContext->max_analyze_duration = 1 * AV_TIME_BASE;
+		avContext->max_analyze_duration2 = 1 * AV_TIME_BASE;
 	else
-		avContext->max_analyze_duration = 0;
+		avContext->max_analyze_duration2 = 0;
 
 	ret = avformat_open_input(&avContext, filename, NULL, NULL);
 
