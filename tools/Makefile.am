@@ -9,10 +9,7 @@ SUBDIRS = \
 	ustslave \
 	gitVCInfo \
 	hotplug \
+	libeplayer3 \
 	libmme_host \
 	libmmeimage
 
-if ENABLE_EPLAYER3
-SUBDIRS += \
-	libeplayer3
-endif

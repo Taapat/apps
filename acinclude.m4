@@ -321,28 +321,6 @@ AC_SUBST(CATALOGS)
 ])
 
 
-AC_DEFUN([TUXBOX_BOXTYPE],[
-AC_ARG_WITH(boxtype,
-	[  --with-boxtype    valid values: spark, spark7162 ],
-	[case "${withval}" in spark|spark7162)
-			BOXTYPE="$withval"
-			;;
-		*)
-			AC_MSG_ERROR([bad value $withval for --with-boxtype]) ;;
-	esac], [BOXTYPE="ufs912"])
-
-AC_SUBST(BOXTYPE)
-
-AM_CONDITIONAL(BOXTYPE_SPARK, test "$BOXTYPE" = "spark")
-AM_CONDITIONAL(BOXTYPE_SPARK7162, test "$BOXTYPE" = "spark7162")
-
-if test "$BOXTYPE" = "spark"; then
-	AC_DEFINE(HAVE_SPARK_HARDWARE, 1, [building for an spark])
-elif test "$BOXTYPE" = "spark7162"; then
-	AC_DEFINE(HAVE_SPARK7162_HARDWARE, 1, [building for a spark7162])
-fi
-])
-
 dnl backward compatiblity
 AC_DEFUN([AC_GNU_SOURCE],
 [AH_VERBATIM([_GNU_SOURCE],
