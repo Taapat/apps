@@ -7,7 +7,6 @@ SUBDIRS = \
 	streamproxy \
 	stfbcontrol \
 	ustslave \
-	gitVCInfo \
 	hotplug \
 	libeplayer3 \
 	libmme_host \
