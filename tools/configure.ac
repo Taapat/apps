@@ -19,7 +19,6 @@ fi
 AC_OUTPUT([
 Makefile
 fp_control/Makefile
-showiframe/Makefile
 stfbcontrol/Makefile
 streamproxy/Makefile
 ustslave/Makefile
