@@ -6,7 +6,6 @@ SUBDIRS = \
 	streamproxy \
 	stfbcontrol \
 	ustslave \
-	hotplug \
 	libeplayer3 \
 	libmme_host \
 	libmmeimage

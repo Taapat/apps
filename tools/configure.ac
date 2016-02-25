@@ -23,7 +23,6 @@ showiframe/Makefile
 stfbcontrol/Makefile
 streamproxy/Makefile
 ustslave/Makefile
-hotplug/Makefile
 libeplayer3/Makefile
 libmme_host/Makefile
 libmmeimage/Makefile
