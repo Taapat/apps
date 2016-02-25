@@ -19,10 +19,9 @@ fi
 AC_OUTPUT([
 Makefile
 fp_control/Makefile
-stfbcontrol/Makefile
-streamproxy/Makefile
-ustslave/Makefile
 libeplayer3/Makefile
 libmme_host/Makefile
 libmmeimage/Makefile
+stfbcontrol/Makefile
+ustslave/Makefile
 ])
