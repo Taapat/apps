@@ -18,7 +18,6 @@ fi
 
 AC_OUTPUT([
 Makefile
-devinit/Makefile
 fp_control/Makefile
 showiframe/Makefile
 stfbcontrol/Makefile

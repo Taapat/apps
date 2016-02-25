@@ -1,7 +1,6 @@
 AUTOMAKE_OPTIONS = gnu
 
 SUBDIRS = \
-	devinit \
 	fp_control \
 	showiframe \
 	streamproxy \
