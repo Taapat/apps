@@ -116,10 +116,10 @@ static float seek_sec_abs = -1.0;
 /* MISC Functions				 */
 /* ***************************** */
 
-static char* Codec2Encoding(AVCodecContext *codec)
+static char* Codec2Encoding(AVCodecParameters *codecpar)
 {
-	fprintf(stderr, "Codec ID: %ld (%.8lx)\n", (long)codec->codec_id, (long)codec->codec_id);
-	switch (codec->codec_id)
+	fprintf(stderr, "Codec ID: %ld (%.8lx)\n", (long)codecpar->codec_id, (long)codecpar->codec_id);
+	switch (codecpar->codec_id)
 	{
 		case AV_CODEC_ID_MPEG1VIDEO:
 		case AV_CODEC_ID_MPEG2VIDEO:
@@ -177,12 +177,12 @@ static char* Codec2Encoding(AVCodecContext *codec)
 			return "S_TEXT/SRT"; /* fixme */
 		default:
 			// Default to injected-pcm for unhandled audio types.
-			if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
+			if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
 				return "A_IPCM";
 
-			if (codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+			if (codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
 				return "S_TEXT/SRT";
-			ffmpeg_err("Codec ID %ld (%.8lx) not found\n", (long)codec->codec_id, (long)codec->codec_id);
+			ffmpeg_err("Codec ID %ld (%.8lx) not found\n", (long)codecpar->codec_id, (long)codecpar->codec_id);
 	}
 	return NULL;
 }
@@ -734,7 +734,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 		Track_t track;
 		AVStream *stream = avContext->streams[n];
 
-		char* encoding = Codec2Encoding(stream->codec);
+		char* encoding = Codec2Encoding(stream->codecpar);
 
 		if (!stream->id)
 			stream->id = n;
