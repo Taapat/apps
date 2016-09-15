@@ -35,6 +35,6 @@ typedef struct PlaybackHandler_s {
     unsigned long long readCount;
 } PlaybackHandler_t;
 
-void libeplayerThreadStop(); // Tell enigma2 that we stop
+void libeplayerMessage(int message); // Send message to enigma2
 
 #endif
