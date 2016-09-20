@@ -27,7 +27,6 @@
 #include <sys/mman.h>
 
 #include "common.h"
-#include "subtitle.h"
 
 extern OutputHandler_t        OutputHandler;
 extern PlaybackHandler_t    PlaybackHandler;
@@ -35,19 +34,6 @@ extern ContainerHandler_t    ContainerHandler;
 extern ManagerHandler_t        ManagerHandler;
 
 Context_t * player = NULL;
-
-/* ******************************************** */
-/* Framebuffer for subtitle                     */
-/* ******************************************** */
-static int               fd  = -1;
-static unsigned char*    lfb = NULL;
-struct fb_fix_screeninfo fix;
-struct fb_var_screeninfo screeninfo, oldscreen;
-
-static int               stride = 0;
-static int               xRes   = 0;
-static int               yRes   = 0;
-static int               bpp    = 0;
 
 int kbhit(void) {
         struct timeval tv;
@@ -68,61 +54,7 @@ int kbhit(void) {
         return 0;
 }
 
-void framebuffer_init()
-{
-	int available  = 0;
-
-	fd = open("/dev/fb0", O_RDWR);
-
-	if (fd < 0)
-	{
-		perror("/dev/fb0");
-		return;
-	}
-
-	if (ioctl(fd, FBIOGET_VSCREENINFO, &screeninfo) < 0)
-	{
-		perror("FBIOGET_VSCREENINFO");
-		return;
-	}
-
-	memcpy(&oldscreen, &screeninfo, sizeof(screeninfo));
-
-	ioctl(fd, FBIOGET_VSCREENINFO, &screeninfo);
-	
-	printf("mode %d, %d, %d\n", screeninfo.xres, screeninfo.yres, screeninfo.bits_per_pixel);
-
-	if (ioctl(fd, FBIOGET_FSCREENINFO, &fix)<0)
-	{
-		perror("FBIOGET_FSCREENINFO");
-		printf("fb failed\n");
-	}
-
-	stride = fix.line_length;
-	xRes   = screeninfo.xres;
-	yRes   = screeninfo.yres;
-	bpp    = screeninfo.bits_per_pixel;
-
-	printf("stride = %d, width %d\n", stride, xRes);
-
-	available = fix.smem_len;
-
-	printf("%dk video mem\n", available/1024);
-
-	lfb = (unsigned char*) mmap(0, available, PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
-
-	if (lfb == NULL)
-	{
-		perror("mmap");
-		return;
-	}
-
-    memset(lfb, 0, available);
-}
-
-
 int main(int argc,char* argv[]) {
-    SubtitleOutputDef_t out;
     int showInfos = 0, noinput = 0;
     char file[255] = {""};
     int speed = 0, speedmap = 0;
@@ -163,16 +95,6 @@ int main(int argc,char* argv[]) {
     player->output->Command(player,OUTPUT_ADD, "audio");
     player->output->Command(player,OUTPUT_ADD, "video");
     player->output->Command(player,OUTPUT_ADD, "subtitle");
-
-    framebuffer_init();
-
-    /* for testing ass subtitles */
-    out.screen_width = xRes;
-    out.screen_height = yRes;
-    out.destination   = lfb;
-    out.destStride    = stride;
-
-    player->output->subtitle->Command(player, OUTPUT_SET_SUBTITLE_OUTPUT, &out);
 
     if(player->playback->Command(player, PLAYBACK_OPEN, file) < 0)
         return 10;
@@ -270,12 +192,10 @@ int main(int argc,char* argv[]) {
             {
                 char* tag = tags[i];
                 player->playback->Command(player, PLAYBACK_INFO, &tag);
-#if !defined(VDR1722)
                 if (tag != NULL)
                     printf("\t%s:\t%s\n",tags[i], tag);
                 else
                     printf("\t%s:\tNULL\n",tags[i]);
-#endif
                 i++;
             }
 
@@ -450,37 +370,7 @@ int main(int argc,char* argv[]) {
                 player->playback->Command(player, PLAYBACK_FASTBACKWARD, &speedmap);
                 break;
             }
-#if defined(VDR1722)
-            case 'g': {
-                char gotoString [256];
-                gets (gotoString);
-                int gotoPos = atoi(gotoString);
-
-                double length = 0;
-                float sec;
-
-                printf("gotoPos %i\n", gotoPos);
-                if (player->container && player->container->selectedContainer)
-                    player->container->selectedContainer->Command(player, CONTAINER_LENGTH, &length);
-
-				if(gotoPos <= 0){
-					printf("kleiner als erlaubt\n");
-					sec = 0.0;
-				}else if(gotoPos >= ((int)length - 10)){
-					printf("laenger als erlaubt\n");
-					sec = (int)length - 10;
-				}else{
-					printf("normal action\n");
-					sec = gotoPos;
-				}
-
-				player->playback->Command(player, PLAYBACK_SEEK, (void*)&sec);	
-                printf("goto postion (%i sec)\n", sec);
-                break;
-            }
-#endif
             case 'k': {
-#if !defined(VDR1722)
                 int Key2 = getchar() - 48;
                 float sec=0.0;
                 printf("seconds %d \n", Key2);
@@ -492,34 +382,6 @@ int main(int argc,char* argv[]) {
                     case 6: sec= 60.0;break;
                     case 9: sec= 300.0;break;
                 }
-#else
-		char seek [256];
-		gets (seek);
-                unsigned int seekTo = atoi(seek);
-		double length = 0;
-		float sec;
-		
-		unsigned long long int CurrentPTS = 0;
-                player->playback->Command(player, PLAYBACK_PTS, &CurrentPTS);
-                if (player->container && player->container->selectedContainer)
-                    player->container->selectedContainer->Command(player, CONTAINER_LENGTH, &length);
-				
-		int CurrentSec = CurrentPTS / 90000;
-		printf("CurrentSec = %i, seekTo = %i, abs(seekTo) = %i  seekTo + CurrentSec %i\n", CurrentSec, seekTo, abs(seekTo), (seekTo + CurrentSec));
-		int ergSec = CurrentSec + seekTo;
-		if(ergSec < 0){
-			printf("kleiner als erlaubt\n");
-			sec = 0.0;
-		}else if((CurrentSec + seekTo) >= ((int)length - 10)){
-			printf("laenger als erlaubt\n");
-			sec = (int)length - 10;
-		}else{
-			printf("normal action\n");
-			sec = seekTo + CurrentSec;
-		}
-
-		printf("springe %i \n", (int)sec);
-#endif
                 player->playback->Command(player, PLAYBACK_SEEK, (void*)&sec);
                 break;
             }

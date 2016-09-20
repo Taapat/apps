@@ -127,6 +127,8 @@ static int Command(Context_t *context, OutputCmd_t command, void * argument) {
                 ret |= context->output->video->Command(context, OUTPUT_OPEN, "video");
             if (context->playback->isAudio)
                 ret |= context->output->audio->Command(context, OUTPUT_OPEN, "audio");
+            if (context->playback->isSubtitle)
+                ret |= context->output->subtitle->Command(context, OUTPUT_OPEN, NULL);
         } else
             ret = cERR_OUTPUT_INTERNAL_ERROR;
         break;
@@ -137,6 +139,8 @@ static int Command(Context_t *context, OutputCmd_t command, void * argument) {
                 ret |= context->output->video->Command(context, OUTPUT_CLOSE, "video");
             if (context->playback->isAudio)
                 ret |= context->output->audio->Command(context, OUTPUT_CLOSE, "audio");
+            if (context->playback->isSubtitle)
+                ret |= context->output->subtitle->Command(context, OUTPUT_CLOSE, NULL);
         } else
             ret = cERR_OUTPUT_INTERNAL_ERROR;
         break;

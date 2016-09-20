@@ -115,15 +115,11 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument) 
     return ret;
 }
 
-extern Container_t SrtContainer;
-extern Container_t SsaContainer;
-extern Container_t ASSContainer;
+extern Container_t TextSubtitleContainer;
 
 ContainerHandler_t ContainerHandler = {
     "Output",
     NULL,
-    &SrtContainer,
-    &SsaContainer,
-    &ASSContainer,
+    &TextSubtitleContainer,
     Command
 };

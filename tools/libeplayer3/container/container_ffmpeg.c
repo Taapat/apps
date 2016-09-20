@@ -51,7 +51,6 @@
 #include "aac.h"
 #include "pcm.h"
 #include "ffmpeg_metadata.h"
-#include "subtitle.h"
 
 /* ***************************** */
 /* Makros/Constants				 */
@@ -164,6 +163,7 @@ static char* Codec2Encoding(AVCodecParameters *codecpar)
 			return "A_AAC";
 			/* subtitle */
 		case AV_CODEC_ID_SSA:
+		case AV_CODEC_ID_ASS:
 			return "S_TEXT/ASS"; /* Hellmaster1024: seems to be ASS instead of SSA */
 		case AV_CODEC_ID_TEXT: /* Hellmaster1024: i dont have most of this, but lets hope it is normal text :-) */
 		case AV_CODEC_ID_DVD_SUBTITLE:
@@ -173,8 +173,9 @@ static char* Codec2Encoding(AVCodecParameters *codecpar)
 		case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
 		case AV_CODEC_ID_DVB_TELETEXT:
 		case AV_CODEC_ID_SRT:
+			return "S_TEXT/SRT";
 		case AV_CODEC_ID_SUBRIP:
-			return "S_TEXT/SRT"; /* fixme */
+			return "S_TEXT/SUBRIP";
 		default:
 			// Default to injected-pcm for unhandled audio types.
 			if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
@@ -227,7 +228,7 @@ float getDurationFromSSALine(unsigned char* line){
 	ffmpeg_printf(10, "%s %s %f\n", ptr[2], ptr[1], (float) msec / 1000.0);
 
 	free(Text);
-	return (float)msec/1000.0;
+	return (int64_t)msec/1000;
 }
 
 /* search for metadata in context and stream
@@ -263,7 +264,6 @@ static void FFMPEGThread(Context_t *context) {
 	hasPlayThreadStarted = 1;
 
 	long long int currentVideoPts = -1, currentAudioPts = -1, showtime = 0, bofcount = 0;
-	AudioVideoOut_t avOut;
 
 	SwrContext *swr = NULL;
 	AVFrame *decoded_frame = NULL;
@@ -398,6 +398,7 @@ static void FFMPEGThread(Context_t *context) {
 
 		if (videoTrack && (videoTrack->Id == pid)) {
 			currentVideoPts = videoTrack->pts = calcPts(videoTrack->stream, packet.pts);
+			AudioVideoOut_t avOut;
 
 			avOut.data	 = packet_data;
 			avOut.len	 = packet_size;
@@ -415,6 +416,7 @@ static void FFMPEGThread(Context_t *context) {
 			}
 		} else if (audioTrack && (audioTrack->Id == pid) && !context->playback->BackWard) {
 			currentAudioPts = audioTrack->pts = calcPts(audioTrack->stream, packet.pts);
+			AudioVideoOut_t avOut;
 
 			ffmpeg_printf(200, "AudioTrack index = %d\n",pid);
 			if (audioTrack->inject_as_pcm == 1)
@@ -586,100 +588,51 @@ static void FFMPEGThread(Context_t *context) {
 				}
 			}
 		} else if (subtitleTrack && (subtitleTrack->Id == pid)) {
-			float duration=3.0;
-			long long int Subtitlepts;
 			ffmpeg_printf(100, "subtitleTrack->stream %p \n", subtitleTrack->stream);
-			Subtitlepts = calcPts(subtitleTrack->stream, packet.pts);
+
+			int64_t duration = 0;
+			int64_t Subtitlepts = (int64_t)calcPts(subtitleTrack->stream, packet.pts);
 
 			ffmpeg_printf(20, "Packet duration %lld\n", packet.duration);
 
 			if(packet.duration != 0)
-				duration=((float)packet.duration)/1000.0;
+			{
+				duration = (int64_t)av_rescale(packet.duration,
+					(int64_t)((AVStream*)subtitleTrack->stream)->time_base.num * 1000,
+					((AVStream*)subtitleTrack->stream)->time_base.den);
+			}
+			else if(packet.convergence_duration != 0 && packet.convergence_duration != AV_NOPTS_VALUE)
+			{
+				duration = (int64_t)av_rescale(packet.convergence_duration,
+					(int64_t)((AVStream*)subtitleTrack->stream)->time_base.num * 1000,
+					((AVStream*)subtitleTrack->stream)->time_base.den);
+			}
 			else if(((AVStream*)subtitleTrack->stream)->codec->codec_id == AV_CODEC_ID_SSA)
 			{
 				/*Hellmaster1024 if the duration is not stored in packet.duration
 				  we need to calculate it any other way, for SSA it is stored in
 				  the Text line*/
 				duration = getDurationFromSSALine(packet_data);
-			} else {
-				/* no clue yet */
 			}
 
 			/* konfetti: I've found cases where the duration from getDurationFromSSALine
 			 * is zero (start end and are really the same in text). I think it make's
 			 * no sense to pass those.
 			 */
-			if (duration > 0.0)
+			if (duration > 0)
 			{
-				/* is there a decoder ? */
-				if (((AVStream*) subtitleTrack->stream)->codec->codec)
+				Subtitle_Out_t subOut;
+				memset(&subOut, 0, sizeof(subOut));
+
+				subOut.data	= packet_data;
+				subOut.pts	= Subtitlepts / 90;
+				subOut.duration	= duration;
+
+				if (context->output->subtitle->Write(context, &subOut) < 0)
 				{
-					AVSubtitle sub;
-					int got_sub_ptr;
-
-					if (avcodec_decode_subtitle2(((AVStream*) subtitleTrack->stream)->codec, &sub, &got_sub_ptr, &packet) < 0)
-					{
-						ffmpeg_err("error decoding subtitle\n");
-					} else
-					{
-						unsigned int i;
-
-						ffmpeg_printf(0, "format %d\n", sub.format);
-						ffmpeg_printf(0, "start_display_time %d\n", sub.start_display_time);
-						ffmpeg_printf(0, "end_display_time %d\n", sub.end_display_time);
-						ffmpeg_printf(0, "num_rects %d\n", sub.num_rects);
-						ffmpeg_printf(0, "pts %lld\n", sub.pts);
-
-						for (i = 0; i < sub.num_rects; i++)
-						{
-							ffmpeg_printf(0, "x %d\n", sub.rects[i]->x);
-							ffmpeg_printf(0, "y %d\n", sub.rects[i]->y);
-							ffmpeg_printf(0, "w %d\n", sub.rects[i]->w);
-							ffmpeg_printf(0, "h %d\n", sub.rects[i]->h);
-							ffmpeg_printf(0, "nb_colors %d\n", sub.rects[i]->nb_colors);
-							ffmpeg_printf(0, "type %d\n", sub.rects[i]->type);
-							ffmpeg_printf(0, "text %s\n", sub.rects[i]->text);
-							ffmpeg_printf(0, "ass %s\n", sub.rects[i]->ass);
-							// pict ->AVPicture
-						}
-					}
-				} else {
-
-					if(((AVStream*)subtitleTrack->stream)->codec->codec_id == AV_CODEC_ID_SSA)
-					{
-						SubtitleData_t data;
-
-						ffmpeg_printf(10, "videoPts %lld\n", currentVideoPts);
-
-						data.data	= packet_data;
-						data.len	= packet_size;
-						data.extradata 	= subtitleTrack->extraData;
-						data.extralen	= subtitleTrack->extraSize;
-						data.pts	= Subtitlepts;
-						data.duration	= duration;
-
-						context->container->assContainer->Command(context, CONTAINER_DATA, &data);
-					}
-					else
-					{
-						/* hopefully native text ;) */
-						unsigned char* line = text_to_ass((char *)packet_data, Subtitlepts/90, duration);
-						ffmpeg_printf(50,"text line is %s\n",(char *)packet_data);
-						ffmpeg_printf(50,"Sub line is %s\n",line);
-						ffmpeg_printf(20, "videoPts %lld %f\n", currentVideoPts,currentVideoPts/90000.0);
-						SubtitleData_t data;
-						data.data   = line;
-						data.len   = strlen((char*)line);
-						data.extradata = (unsigned char *) DEFAULT_ASS_HEAD;
-						data.extralen  = strlen(DEFAULT_ASS_HEAD);
-						data.pts   = Subtitlepts;
-						data.duration  = duration;
-
-						context->container->assContainer->Command(context, CONTAINER_DATA, &data);
-						free(line);
-					}
+					ffmpeg_err("writing data to subtitle device failed\n");
 				}
-			} /* duration */
+			}
 		}
 
 		av_packet_unref(&packet);
@@ -889,8 +842,6 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 			case AVMEDIA_TYPE_SUBTITLE:
 				ffmpeg_printf(10, "CODEC_TYPE_SUBTITLE %d\n",stream->codec->codec_type);
 
-				track.width = -1; /* will be filled online from videotrack */
-				track.height = -1; /* will be filled online from videotrack */
 				track.extraData = stream->codec->extradata;
 				track.extraSize = stream->codec->extradata_size;
 
@@ -902,17 +853,7 @@ int container_ffmpeg_update_tracks(Context_t *context, char *filename)
 				ffmpeg_printf(10, "FOUND SUBTITLE %s\n", track.Name);
 
 				if (context->manager->subtitle) {
-					if (!stream->codec->codec) {
-						stream->codec->codec = avcodec_find_decoder(stream->codec->codec_id);
-						if (!stream->codec->codec)
-							ffmpeg_err("avcodec_find_decoder failed for subtitle track %d\n", n);
-						else if (avcodec_open2(stream->codec, stream->codec->codec, NULL)) {
-							ffmpeg_err("avcodec_open2 failed for subtitle track %d\n", n);
-							stream->codec->codec = NULL;
-						}
-					}
 					if (context->manager->subtitle->Command(context, MANAGER_ADD, &track) < 0) {
-						/* konfetti: fixme: is this a reason to return with error? */
 						ffmpeg_err("failed to add subtitle track %d\n", n);
 					}
 				}

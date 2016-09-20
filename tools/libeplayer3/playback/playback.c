@@ -120,9 +120,6 @@ static int PlaybackOpen(Context_t  *context, char * uri)
 		context->playback->isHttp = 1;
 	}
 
-	if (context->container && context->container->assContainer)
-		context->container->assContainer->Command(context, CONTAINER_INIT, NULL);
-
 	if (!strncmp("file://", uri, 7) || !strncmp("bluray://", uri, 9) || !strncmp("ftp://", uri, 6))
 	{
 		extension = getExtension(context->playback->uri+7);
@@ -132,11 +129,8 @@ static int PlaybackOpen(Context_t  *context, char * uri)
 			extension = "mp3";
 		}
 
-		if (context->container && context->container->textSrtContainer)
-			context->container->textSrtContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
-
-		if (context->container && context->container->textSsaContainer)
-			context->container->textSsaContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
+		if (context->container && context->container->textSubtitleContainer)
+			context->container->textSubtitleContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
 	}
 	else if (strstr(uri, "://"))
 	{
@@ -177,11 +171,8 @@ static int PlaybackClose(Context_t  *context) {
         playback_err("container delete failed\n");
     }
 
-    if (context->container && context->container->textSrtContainer)
-        context->container->textSrtContainer->Command(context, CONTAINER_DEL, NULL);
-
-    if (context->container && context->container->textSsaContainer)
-        context->container->textSsaContainer->Command(context, CONTAINER_DEL, NULL);
+    if (context->container && context->container->textSubtitleContainer)
+        context->container->textSubtitleContainer->Command(context, CONTAINER_DEL, NULL);
 
     context->manager->audio->Command(context, MANAGER_DEL, NULL);
     context->manager->video->Command(context, MANAGER_DEL, NULL);
@@ -663,26 +654,19 @@ static int PlaybackSwitchSubtitle(Context_t  *context, int* track) {
 
             context->manager->subtitle->Command(context, MANAGER_GET, &trackid);
 
-/* konfetti: I make this hack a little bit nicer,
- * but its still a hack in my opinion ;)
- */
-            if (context->container && context->container->assContainer)
-                context->container->assContainer->Command(context, CONTAINER_SWITCH_SUBTITLE, &trackid);
-
             if (trackid >= TEXTSRTOFFSET)
             {
-                if (context->container && context->container->textSrtContainer)
-                     context->container->textSrtContainer->Command(context, CONTAINER_SWITCH_SUBTITLE, &trackid);
+                if (context->container && context->container->textSubtitleContainer)
+                     context->container->textSubtitleContainer->Command(context, CONTAINER_SWITCH_SUBTITLE, &trackid);
             }
-            if (trackid >= TEXTSSAOFFSET)
+            else
             {
-                 if (context->container && context->container->textSsaContainer)
-                     context->container->textSsaContainer->Command(context, CONTAINER_SWITCH_SUBTITLE, &trackid);
+                /* force a seek, to flush buffers and turn on immediately non text subtitles */
+                float pos = -10.0;
+                ret = PlaybackSeek(context, (float*)&pos, 0);
             }
-            
-            
-            
-        } else
+        }
+        else
         {
             ret = cERR_PLAYBACK_ERROR;
             playback_err("no subtitle\n");
@@ -787,6 +771,10 @@ static int Command(Context_t *context, PlaybackCmd_t command, void * argument) {
     }
     case PLAYBACK_FASTBACKWARD: {
         ret = PlaybackFastBackward(context,(int*)argument);
+        break;
+    }
+    case PLAYBACK_SEND_MESSAGE: {
+        libeplayerMessage(*((int*)argument));
         break;
     }
     default:

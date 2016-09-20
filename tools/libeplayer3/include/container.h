@@ -44,9 +44,7 @@ extern Container_t FFMPEGContainer;
 typedef struct ContainerHandler_s {
     char * Name;
     Container_t * selectedContainer;
-    Container_t * textSrtContainer;
-    Container_t * textSsaContainer;
-    Container_t * assContainer;
+    Container_t * textSubtitleContainer;
 
     int (* Command) (Context_t *, ContainerCmd_t, void *);
 } ContainerHandler_t;

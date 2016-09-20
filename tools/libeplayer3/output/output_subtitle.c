@@ -18,10 +18,6 @@
  *
  */
 
-/* ***************************** */
-/* Includes                      */
-/* ***************************** */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -31,19 +27,11 @@
 #include <sys/stat.h>
 #include <memory.h>
 #include <asm/types.h>
-#include <pthread.h>
 #include <errno.h>
 
 #include "common.h"
-#include "output.h"
-#include "subtitle.h"
-
-/* ***************************** */
-/* Makros/Constants              */
-/* ***************************** */
 
 #define SUBTITLE_DEBUG
-
 #ifdef SUBTITLE_DEBUG
 
 static short debug_level = 0;
@@ -64,434 +52,220 @@ if (debug_level >= level) printf("[%s:%s] " fmt, __FILE__, __FUNCTION__, ## x); 
 #define cERR_SUBTITLE_NO_ERROR         0
 #define cERR_SUBTITLE_ERROR            -1
 
-static const char FILENAME[] = "subtitle.c";
+static const char FILENAME[] = "output_subtitle.c";
 
-/*
-Number, Style, Name,, MarginL, MarginR, MarginV, Effect,, Text
-
-1038,0,tdk,,0000,0000,0000,,That's not good.
-1037,0,tdk,,0000,0000,0000,,{\i1}Rack them up, rack them up,{\i0}\N{\i1}rack them up.{\i0} [90]
-1036,0,tdk,,0000,0000,0000,,Okay, rack them up.
-*/
+struct sub_t
+{
+     uint8_t *data;
+     int64_t  pts;
+     int64_t  duration;
+};
 
 #define PUFFERSIZE 20
 
-/* ***************************** */
-/* Types                         */
-/* ***************************** */
+static struct sub_t subtitleData[PUFFERSIZE];
 
-struct sub_t {
-    char *                 text;
-    unsigned long long int pts;
-    unsigned long int      milliDuration;
-};
-
-
-/* ***************************** */
-/* Varaibles                     */
-/* ***************************** */
-
-static pthread_mutex_t mutex;
-
-void* clientData = NULL;
-void  (*clientFunction) (long int, size_t, char *, void *);
-
-static struct sub_t subPuffer[PUFFERSIZE];
-static int readPointer = 0;
 static int writePointer = 0;
+static int readPointer = 0;
+static int isSubtitleOpened = 0;
 
-static int            screen_width     = 0;
-static int            screen_height    = 0;
-static int            destStride       = 0;
-static int            shareFramebuffer = 0;
-static int            framebufferFD    = -1;
-static unsigned char* destination      = NULL;
-static void           (*framebufferBlit)() = NULL;
+static char *ass_get_text(char *str)
+{
+	/*
+	ReadOrder, Layer, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+	91,0,Default,,0,0,0,,maar hij smaakt vast tof.
+	*/
 
-/* ***************************** */
-/* MISC Functions                */
-/* ***************************** */
-static void getMutex(int line) {
-    subtitle_printf(100, "%d requesting mutex\n", line);
+	int i = 0;
+	char *p_str = str;
+	while(i < 8 && *p_str != '\0')
+	{
+		if (*p_str == ',')
+			i++;
+		p_str++;
+	}
 
-    pthread_mutex_lock(&mutex);
-
-    subtitle_printf(100, "%d received mutex\n", line);
+	/* standardize hard break: '\N' -> '\n' http://docs.aegisub.org/3.2/ASS_Tags/ */
+	char *p_newline = NULL;
+	while((p_newline = strstr(p_str, "\\N")) != NULL)
+		*(p_newline + 1) = 'n';
+	return p_str;
 }
 
-static void releaseMutex(int line) {
-    pthread_mutex_unlock(&mutex);
+static int Write(Context_t *context, void *data)
+{
+	subtitle_printf(10, "\n");
+	char *Encoding = NULL;
+	int msg = 0;
 
-    subtitle_printf(100, "%d released mutex\n", line);
+	if (data == NULL)
+	{
+		subtitle_err("null pointer passed\n");
+		return cERR_SUBTITLE_ERROR;
+	}
+
+	context->manager->subtitle->Command(context, MANAGER_GETENCODING, &Encoding);
+
+	if (Encoding == NULL)
+	{
+		subtitle_err("encoding unknown\n");
+		return cERR_SUBTITLE_ERROR;
+	}
+
+	Subtitle_Out_t* out = (Subtitle_Out_t*) data;
+
+	if (subtitleData[writePointer].data != NULL)
+	{
+		subtitle_err("subtitle list is full, dlete %d\n", writePointer);
+		free(subtitleData[writePointer].data);
+		subtitleData[writePointer].data     = NULL;
+		subtitleData[writePointer].pts	    = 0;
+		subtitleData[writePointer].duration = 0;
+	}
+
+	if (!strncmp("S_TEXT/ASS", Encoding, 10))
+	{
+		subtitleData[writePointer].data = (uint8_t *)strdup(ass_get_text((char *)out->data));
+	}
+	else if (!strncmp("S_TEXT/SUBRIP", Encoding, 13) || !strncmp("S_TEXT/SRT", Encoding, 10) || !strncmp("S_TEXT/SSA", Encoding, 10))
+	{
+		subtitleData[writePointer].data = (uint8_t *)strdup((const char *)out->data);
+	}
+	else
+	{
+		subtitle_err("unknown encoding %s\n", Encoding);
+		return cERR_SUBTITLE_ERROR;
+	}
+
+	subtitleData[writePointer].pts	    = out->pts;
+	subtitleData[writePointer].duration = out->duration;
+
+	subtitle_printf(10, "Encoding:%s Text:%s [%lld] -> [%lld]\n",
+		Encoding, (const char *)subtitleData[writePointer].data, subtitleData[writePointer].pts,
+		subtitleData[writePointer].pts + subtitleData[writePointer].duration);
+
+	writePointer++;
+
+	if (writePointer == PUFFERSIZE)
+	{
+		writePointer = 0;
+	}
+
+	/* Tell enigma2 that we have subtitles */
+	context->playback->Command(context, PLAYBACK_SEND_MESSAGE, (void *) &msg);
+
+	subtitle_printf(10, "<\n");
+	return cERR_SUBTITLE_NO_ERROR;
 }
 
-void replace_all(char ** string, char * search, char * replace) {
-    int len = 0;
-    char * ptr = NULL;
-    char tempString[512];
-    char newString[512];
+static void subtitle_Reset()
+{
+	subtitle_printf(10, "\n");
+	int i;
 
-    newString[0] = '\0';
+	writePointer = 0;
+	readPointer = 0;
 
-    if ((string == NULL) || (*string == NULL) || (search == NULL) || (replace == NULL))
-    {
-        subtitle_err("null pointer passed\n");
-        return;
-    }
-    
-    strncpy(tempString, *string, 511);
-    tempString[511] = '\0';
+	for (i = 0; i < PUFFERSIZE; i++)
+	{
+		if (isSubtitleOpened && subtitleData[i].data != NULL)
+		{
+			free(subtitleData[i].data);
+			subtitleData[i].data = NULL;
+		}
+		subtitleData[i].pts	     = 0;
+		subtitleData[i].duration = 0;
+	}
 
-    free(*string);
-
-    while ((ptr = strstr(tempString, search)) != NULL) {
-        len  = ptr - tempString;
-        strncpy(newString, tempString, len);
-        newString[len] = '\0';
-        strcat(newString, replace);
-
-        len += strlen(search);
-        strcat(newString, tempString+len);
-
-        strcpy(tempString, newString);
-    }
-
-    subtitle_printf(20, "strdup in line %d\n", __LINE__);
-
-    if(newString[0] != '\0')
-        *string = strdup(newString);
-    else
-        *string = strdup(tempString);
-
+	subtitle_printf(10, "<\n");
 }
 
-int subtitle_ParseASS (char **Line) {
-    char* Text;
-    int   i;
-    char* ptr1;
+static int subtitle_DelData()
+{
+	subtitle_printf(10, " %d\n", readPointer);
 
-    if ((Line == NULL) || (*Line == NULL))
-    {
-        subtitle_err("null pointer passed\n");
-        return cERR_SUBTITLE_ERROR;
-    }
-    
-    Text = strdup(*Line);
+	if (subtitleData[readPointer].data == NULL)
+	{
+		subtitle_err("null pointer in data\n");
+	}
+	else
+	{
+		free(subtitleData[readPointer].data);
+		subtitleData[readPointer].data = NULL;
+	}
+	subtitleData[readPointer].pts	   = 0;
+	subtitleData[readPointer].duration = 0;
 
-    subtitle_printf(10, "-> Text = %s\n", *Line);
+	readPointer++;
 
-    ptr1 = Text;
-    
-    for (i=0; i < 9 && *ptr1 != '\0'; ptr1++) {
+	if (readPointer == PUFFERSIZE)
+	{
+		readPointer = 0;
+	}
 
-        subtitle_printf(20, "%s",ptr1);
-
-        if (*ptr1 == ',')
-            i++;
-    }
-
-    free(*Line);
-
-    *Line = strdup(ptr1);
-    free(Text);
-
-    replace_all(Line, "\\N", "\n");
-
-    replace_all(Line, "{\\i1}", "<i>");
-    replace_all(Line, "{\\i0}", "</i>");
-
-    subtitle_printf(10, "<- Text=%s\n", *Line);
-
-    return cERR_SUBTITLE_NO_ERROR;
+	return cERR_SUBTITLE_NO_ERROR;
 }
 
-int subtitle_ParseSRT (char **Line) {
+static int subtitle_Open()
+{
+	subtitle_printf(10, "\n");
 
-    if ((Line == NULL) || (*Line == NULL))
-    {
-        subtitle_err("null pointer passed\n");
-        return cERR_SUBTITLE_ERROR;
-    }
+	subtitle_Reset();
+	isSubtitleOpened = 1;
 
-    subtitle_printf(20, "-> Text=%s\n", *Line);
-
-    replace_all(Line, "\x0d", "");
-    replace_all(Line, "\n\n", "\\N");
-    replace_all(Line, "\n", "");
-    replace_all(Line, "\\N", "\n");
-    replace_all(Line, "ö", "oe");
-    replace_all(Line, "ä", "ae");
-    replace_all(Line, "ü", "ue");
-    replace_all(Line, "Ö", "Oe");
-    replace_all(Line, "Ä", "Ae");
-    replace_all(Line, "Ü", "Ue");
-    replace_all(Line, "ß", "ss");
-    replace_all(Line, "<u>", "");
-    replace_all(Line, "<i>", "");
-    replace_all(Line, "<b>", "");
-    replace_all(Line, "</u>", "");
-    replace_all(Line, "</i>", "");
-    replace_all(Line, "</b>", "");
-
-    subtitle_printf(10, "<- Text=%s\n", *Line);
-
-    return cERR_SUBTITLE_NO_ERROR;
+	return cERR_SUBTITLE_NO_ERROR;
 }
 
-int subtitle_ParseSSA (char **Line) {
+static int subtitle_Close()
+{
+	subtitle_printf(10, "\n");
 
-    if ((Line == NULL) || (*Line == NULL))
-    {
-        subtitle_err("null pointer passed\n");
-        return cERR_SUBTITLE_ERROR;
-    }
+	subtitle_Reset();
+	isSubtitleOpened = 0;
 
-    subtitle_printf(20, "-> Text=%s\n", *Line);
-
-    replace_all(Line, "\x0d", "");
-    replace_all(Line, "\n\n", "\\N");
-    replace_all(Line, "\n", "");
-    replace_all(Line, "\\N", "\n");
-    replace_all(Line, "ö", "oe");
-    replace_all(Line, "ä", "ae");
-    replace_all(Line, "ü", "ue");
-    replace_all(Line, "Ö", "Oe");
-    replace_all(Line, "Ä", "Ae");
-    replace_all(Line, "Ü", "Ue");
-    replace_all(Line, "ß", "ss");
-    replace_all(Line, "<u>", "");
-    replace_all(Line, "<i>", "");
-    replace_all(Line, "<b>", "");
-    replace_all(Line, "</u>", "");
-    replace_all(Line, "</i>", "");
-    replace_all(Line, "</b>", "");
-
-    subtitle_printf(10, "<- Text=%s\n", *Line);
-
-    return cERR_SUBTITLE_NO_ERROR;
+	return cERR_SUBTITLE_NO_ERROR;
 }
 
-void addSub(Context_t  *context, char * text, unsigned long long int pts, unsigned long int milliDuration) {
-    int count = 20;
-    
-    subtitle_printf(50, "index %d\n", writePointer);
+static int Command(Context_t *context, OutputCmd_t command, void *argument)
+{
+	int ret = cERR_SUBTITLE_NO_ERROR;
 
-    if(context && context->playback && !context->playback->isPlaying)
-    {
-        subtitle_err("1. aborting ->no playback\n");
-        return;
-    }
-    
-    if (text == NULL)
-    {
-        subtitle_err("null pointer passed\n");
-        return;
-    }
+	subtitle_printf(50, "%d\n", command);
 
-    if (pts == 0)
-    {
-        subtitle_err("pts 0\n");
-        return;
-    }
+	switch(command)
+	{
+		case OUTPUT_GET_SUBTITLE_DATA:
+			*((Subtitle_Out_t **)argument) = (Subtitle_Out_t *) &subtitleData[readPointer];
+			subtitle_printf(50, "Get data %d Text:%s [%lld] -> [%lld]\n",
+				readPointer, (const char *)subtitleData[readPointer].data, subtitleData[readPointer].pts,
+				subtitleData[readPointer].pts + subtitleData[readPointer].duration);
+			break;
+		case OUTPUT_DEL_SUBTITLE_DATA:
+			ret = subtitle_DelData();
+			break;
+		case OUTPUT_OPEN:
+			ret = subtitle_Open();
+			break;
+		case OUTPUT_CLOSE:
+			ret = subtitle_Close();
+			break;
+		default:
+			subtitle_err("OutputCmd %d not supported!\n", command);
+			ret = cERR_SUBTITLE_ERROR;
+			break;
+	}
 
-    if (milliDuration == 0)
-    {
-        subtitle_err("duration 0\n");
-        return;
-    }
-    
-    while (subPuffer[writePointer].text != NULL) {
-        //List is full, wait till we got some free space
+	subtitle_printf(50, "exiting with value %d\n", ret);
 
-        if(context && context->playback && !context->playback->isPlaying)
-        {
-            subtitle_err("2. aborting ->no playback\n");
-            return;
-        }
-
-/* konfetti: we dont want to block forever here. if no buffer
- * is available we start ring from the beginning and loose some stuff
- * which is acceptable!
- */
-        subtitle_printf(10, "waiting on free buffer %d - %d (%d) ...\n", writePointer, readPointer, count);
-        usleep(10000);
-        count--;
-        
-        if (count == 0)
-        {
-            subtitle_err("abort waiting on buffer...\n");
-            break;
-        }
-    }
-    
-    subtitle_printf(20, "from mkv: %s pts:%lld milliDuration:%lud\n",text,pts,milliDuration);
-
-    getMutex(__LINE__);
-
-    if (count == 0)
-    {
-        int i;
-        subtitle_err("freeing not delivered data\n");
-        
-        //Reset all
-        readPointer = 0;
-        writePointer = 0;
-
-        for (i = 0; i < PUFFERSIZE; i++) {
-            if (subPuffer[i].text != NULL)
-               free(subPuffer[i].text);
-            subPuffer[i].text          = NULL;
-            subPuffer[i].pts           = 0;
-            subPuffer[i].milliDuration = 0;
-        }
-    }
-
-    subPuffer[writePointer].text = strdup(text);
-    subPuffer[writePointer].pts = pts;
-    subPuffer[writePointer].milliDuration = milliDuration;
-
-    writePointer++;
-    
-    if (writePointer == PUFFERSIZE)
-        writePointer = 0;
-
-    if (writePointer == readPointer)
-    {
-        /* this should not happen, and means that there is nor reader or
-         * the reader has performance probs ;)
-         * the recovery is done at startup of this function - but next time
-         */
-        subtitle_err("ups something went wrong. no more readers? \n");
-    }
-
-    releaseMutex(__LINE__);
-
-    subtitle_printf(10, "<\n");
-}
-
-/* ***************************** */
-/* Functions                     */
-/* ***************************** */
-
-static int Write(Context_t *context, void *data) {
-    char * Encoding = NULL;
-    char * Text = NULL;
-    SubtitleOut_t * out;
-    int DataLength;
-    unsigned long long int Pts;
-    float Duration;
- 
-    subtitle_printf(10, "\n");
-
-    if (data == NULL)
-    {
-        subtitle_err("null pointer passed\n");
-        return cERR_SUBTITLE_ERROR;
-    }
-
-    out = (SubtitleOut_t*) data;
-    
-    if (out->type == eSub_Txt)
-    {
-        Text = strdup((const char*) out->u.text.data);
-    } else
-    {
-/* fixme handle gfx subs from container_ass and send it to
- * the callback. this must be implemented also in e2/neutrino
- * then.
- */    
-        subtitle_err("subtitle gfx currently not handled\n");
-        return cERR_SUBTITLE_ERROR;
-    } 
-
-    DataLength = out->u.text.len;
-    Pts = out->pts;
-    Duration = out->duration;
-    
-    context->manager->subtitle->Command(context, MANAGER_GETENCODING, &Encoding);
-
-    if (Encoding == NULL)
-    {
-       subtitle_err("encoding unknown\n");
-       if (Text) free(Text);
-       return cERR_SUBTITLE_ERROR;
-    }
-    
-    subtitle_printf(20, "Encoding:%s Text:%s Len:%d\n", Encoding,Text, DataLength);
-
-    if (    !strncmp("S_TEXT/SSA",  Encoding, 10) ||
-            !strncmp("S_SSA",       Encoding, 5))
-        subtitle_ParseSSA(&Text);
-    
-    else if(!strncmp("S_TEXT/ASS",  Encoding, 10) ||
-            !strncmp("S_AAS",       Encoding, 5))
-        subtitle_ParseASS(&Text);
-    
-    else if(!strncmp("S_TEXT/SRT",  Encoding, 10) ||
-            !strncmp("S_SRT",       Encoding, 5))
-        subtitle_ParseSRT(&Text);
-    else
-    {
-        subtitle_err("unknown encoding %s\n", Encoding);
-        return  cERR_SUBTITLE_ERROR;
-    }
-    
-    subtitle_printf(10, "Text:%s Duration:%f\n", Text,Duration);
-
-    addSub(context, Text, Pts, Duration * 1000);
-    
-    if (Text) free(Text);
-
-    subtitle_printf(10, "<\n");
-
-    return cERR_SUBTITLE_NO_ERROR;
-}
-
-static int Command(Context_t *context, OutputCmd_t command, void * argument) {
-    int ret = cERR_SUBTITLE_NO_ERROR;
-
-    subtitle_printf(50, "%d\n", command);
-
-    switch(command) {
-        case OUTPUT_GET_SUBTITLE_OUTPUT: {
-            SubtitleOutputDef_t* out = (SubtitleOutputDef_t*)argument;
-            out->screen_width = screen_width;
-            out->screen_height = screen_height;
-            out->shareFramebuffer = shareFramebuffer;
-            out->framebufferFD = framebufferFD;
-            out->destination = destination;
-            out->destStride = destStride;
-            out->framebufferBlit = framebufferBlit;
-            break;
-        }
-        case OUTPUT_SET_SUBTITLE_OUTPUT: {
-            SubtitleOutputDef_t* out = (SubtitleOutputDef_t*)argument;
-            screen_width = out->screen_width;
-            screen_height = out->screen_height;
-            shareFramebuffer = out->shareFramebuffer;
-            framebufferFD = out->framebufferFD;
-            destination = out->destination;
-            destStride = out->destStride;
-            framebufferBlit = out->framebufferBlit;
-            break;
-        }
-    default:
-        subtitle_err("OutputCmd %d not supported!\n", command);
-        ret = cERR_SUBTITLE_ERROR;
-        break;
-    }
-
-    subtitle_printf(50, "exiting with value %d\n", ret);
-
-    return ret;
+	return ret;
 }
 
 
 static char *SubtitleCapabilitis[] = { "subtitle", NULL };
 
 struct Output_s SubtitleOutput = {
-    "Subtitle",
-    &Command,
-    &Write,
-    SubtitleCapabilitis
+	"Subtitle",
+	&Command,
+	&Write,
+	SubtitleCapabilitis
 };

@@ -27,8 +27,9 @@ typedef enum {
 /* fixme: e2 */
     OUTPUT_SUBTITLE_REGISTER_FUNCTION = 222,
     OUTPUT_SUBTITLE_REGISTER_BUFFER = 223,
-    OUTPUT_GET_SUBTITLE_OUTPUT,
-    OUTPUT_SET_SUBTITLE_OUTPUT
+    OUTPUT_SET_SUBTITLE_OUTPUT,
+    OUTPUT_GET_SUBTITLE_DATA,
+    OUTPUT_DEL_SUBTITLE_DATA
 } OutputCmd_t;
 
 typedef enum {
@@ -54,6 +55,13 @@ typedef struct
      
      OutputType_t           type;
 } AudioVideoOut_t;
+
+typedef struct
+{
+     uint8_t*               data;
+     int64_t                pts;
+     int64_t                duration;
+} Subtitle_Out_t;
 
 struct Context_s;
 typedef struct Context_s Context_t;
