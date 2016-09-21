@@ -303,25 +303,29 @@ static void SubtitleManagerAdd(Context_t  *context __attribute__((unused)), SubT
 {
 	sub_printf(20, "%s %d\n", track.File, track.Id);
 
-	if (Tracks == NULL) {
+	if (Tracks == NULL)
+	{
 		Tracks = malloc(sizeof(SubTrack_t) *TRACKWRAP);
 	}
 
-	if (TrackCount < TRACKWRAP) {
+	if (TrackCount < TRACKWRAP)
+	{
 		Tracks[TrackCount].File = strdup(track.File);
 		Tracks[TrackCount].Id = track.Id;
 		TrackCount++;
 	}
 }
 
-static void SubtitleManagerDel(Context_t *context __attribute__((unused)))
+static void SubtitleManagerDel()
 {
 	int i = 0;
 
 	sub_printf(20, "\n");
 
-	if(Tracks != NULL) {
-		for (i = 0; i < TrackCount; i++) {
+	if(Tracks != NULL)
+	{
+		for (i = 0; i < TrackCount; i++)
+		{
 			if (Tracks[i].File != NULL)
 				free(Tracks[i].File);
 			Tracks[i].File = NULL;
@@ -441,9 +445,7 @@ static int GetSubtitle(Context_t  *context, char * Filename)
 				};
 
 				SubtitleManagerAdd(context, TextSubtitle);
-
 				i++;
-
 				context->manager->subtitle->Command(context, MANAGER_ADD, &Subtitle);
 			}
 		} /* while */
@@ -456,7 +458,7 @@ static int GetSubtitle(Context_t  *context, char * Filename)
 	return cERR_SUBTITLE_NO_ERROR;
 }
 
-static int OpenSubtitle(Context_t *context __attribute__((unused)), int pid)
+static int OpenSubtitle(int pid)
 {
 	sub_printf(20, "\n");
 
@@ -501,7 +503,7 @@ static int OpenSubtitle(Context_t *context __attribute__((unused)), int pid)
 	return cERR_SUBTITLE_NO_ERROR;
 }
 
-static int CloseSubtitle(Context_t *context __attribute__((unused)))
+static int CloseSubtitle()
 {
 	sub_printf(20, "\n");
 
@@ -522,9 +524,9 @@ static int SwitchSubtitle(Context_t *context, int* arg)
 
 	int ret = cERR_SUBTITLE_NO_ERROR;
 
-	ret = CloseSubtitle(context);
+	ret = CloseSubtitle();
 
-	if (( (ret |= OpenSubtitle(context, *arg)) == cERR_SUBTITLE_NO_ERROR) && (!hasThreadStarted))
+	if (( (ret |= OpenSubtitle(*arg)) == cERR_SUBTITLE_NO_ERROR) && (!hasThreadStarted))
 	{
 		pthread_attr_t attr;
 		pthread_attr_init(&attr);
@@ -537,14 +539,14 @@ static int SwitchSubtitle(Context_t *context, int* arg)
 	return ret;
 }
 
-static int SubtitleDel(Context_t *context)
+static int SubtitleDel()
 {
 	sub_printf(20, "\n");
 
 	int ret = cERR_SUBTITLE_NO_ERROR;
 
-	ret = CloseSubtitle(context);
-	SubtitleManagerDel(context);
+	ret = CloseSubtitle();
+	SubtitleManagerDel();
 
 	return ret;
 }
@@ -558,13 +560,10 @@ static int Command(Context_t *context, ContainerCmd_t command, void * argument)
 	switch(command)
 	{
 		case CONTAINER_INIT:
-		{
-			char * filename = (char *)argument;
-			ret = GetSubtitle(context, filename);
+			ret = GetSubtitle(context, (char *)argument);
 			break;
-		}
 		case CONTAINER_DEL:
-			ret = SubtitleDel(context);
+			ret = SubtitleDel();
 			break;
 		case CONTAINER_SWITCH_SUBTITLE:
 			ret = SwitchSubtitle(context, (int *)argument);
