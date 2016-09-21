@@ -74,7 +74,7 @@ static int SrtSubtitles = 0;
 FILE *fsub = NULL;
 
 
-void data_to_manager(Context_t *context, char* Text, int64_t Pts, int64_t Duration)
+static void data_to_manager(Context_t *context, char* Text, int64_t Pts, int64_t Duration)
 {
 	sub_printf(20, "start:%lld end:%lld Text: %s",Pts, Pts + Duration, Text);
 
@@ -95,6 +95,44 @@ void data_to_manager(Context_t *context, char* Text, int64_t Pts, int64_t Durati
 			sub_err("writing data to subtitle device failed\n");
 		}
 	}
+}
+
+static int SubtitlePosition(Context_t *context, int64_t Pts, int64_t Duration)
+{
+	sub_printf(20, "\n");
+	unsigned long long int playPts = 0;
+
+	if (context->playback->Command(context, PLAYBACK_PTS, &playPts) < 0)
+	{
+		sub_err("Error in get playback pts!\n");
+		return 0;
+	}
+
+	unsigned long long int curPts = playPts / 90.0;
+	if (Pts + Duration < curPts)
+	{
+		sub_printf(20, "current sub has already ended, skip\n");
+		return 1;
+	}
+
+	while (context && context->playback && context->playback->isPlaying && fsub && Pts > curPts + 2000.0)
+	{
+		sub_printf(20, "current sub in the future, waiting\n");
+		usleep(900000);
+		context->playback->Command(context, PLAYBACK_PTS, &playPts);
+		if (playPts >= curPts * 90.0)
+		{
+			curPts = playPts / 90.0;
+		}
+		else
+		{
+			sub_printf(20, "seek back, restart read\n");
+			return -1;
+		}
+	}
+
+	sub_printf(20, "<\n");
+	return 0;
 }
 
 static void *SubtitleThread(void *data)
@@ -141,36 +179,18 @@ static void *SubtitleThread(void *data)
 				Pts = (int64_t)(horIni * 3600 + minIni * 60 + secIni) * 1000 + milIni;
 				Duration = (int64_t)(horFim * 3600 + minFim * 60 + secFim) * 1000  + milFim - Pts;
 
-				if (context->playback->Command(context, PLAYBACK_PTS, &playPts) < 0)
+				ret = SubtitlePosition(context, Pts, Duration);
+				if (ret == 1)
 				{
-					sub_err("Error in get playback pts!\n");
-				}
-
-				unsigned long long int curPts = playPts / 90.0;
-				if (Pts + Duration < curPts)
-				{
-					sub_printf(20, "current sub has already ended, skip\n");
 					continue;
 				}
-
-				while (context && context->playback && context->playback->isPlaying && fsub && Pts > curPts + 2000.0)
+				else if(ret == -1)
 				{
-					sub_printf(20, "current sub in the future, waiting\n");
-					usleep(900000);
-					context->playback->Command(context, PLAYBACK_PTS, &playPts);
-					if (playPts >= curPts * 90.0)
-					{
-						curPts = playPts / 90.0;
-					}
-					else
-					{
-						sub_printf(20, "seek back, restart read\n");
-						pos = -1;
-						rewind(fsub);
-						break;
-					}
+					pos = -1;
+					rewind(fsub);
 				}
-			pos++;
+
+				pos++;
 			}
 			else if(pos == 2)
 			{
@@ -239,40 +259,21 @@ static void *SubtitleThread(void *data)
 			Pts = (int64_t)(horIni * 3600 + minIni * 60 + secIni) * 1000 + milIni;
 			Duration = (int64_t)(horFim * 3600 + minFim * 60 + secFim) * 1000  + milFim - Pts; 
 
+			ret = SubtitlePosition(context, Pts, Duration);
+			if (ret == 1)
+			{
+				continue;
+			}
+			else if(ret == -1)
+			{
+				rewind(fsub);
+				continue;
+			}
+
 			/* standardize hard break: '\N'->'\n' http://docs.aegisub.org/3.2/ASS_Tags/ */
 			while((p_newline = strstr(ptr, "\\N")) != NULL)
 			{
 				*(p_newline + 1) = 'n';
-			}
-
-			if (context->playback->Command(context, PLAYBACK_PTS, &playPts) < 0)
-			{
-				sub_err("Error in get playback pts!\n");
-			}
-
-			unsigned long long int curPts = playPts / 90.0;
-			if (Pts + Duration < curPts)
-			{
-				sub_printf(20, "current sub has already ended, skip\n");
-				continue;
-			}
-
-			while (context && context->playback && context->playback->isPlaying && fsub && Pts > curPts + 2000.0)
-			{
-				sub_printf(20, "current sub in the future, waiting\n");
-				usleep(900000);
-				context->playback->Command(context, PLAYBACK_PTS, &playPts);
-				if (playPts >= curPts * 90.0)
-				{
-					curPts = playPts / 90.0;
-				}
-				else
-				{
-					sub_printf(20, "seek back, restart read\n");
-					pos = -1;
-					rewind(fsub);
-					break;
-				}
 			}
 
 			Text = strdup(ptr);
@@ -286,14 +287,17 @@ static void *SubtitleThread(void *data)
 		}
 	} /* while */
 
-	hasThreadStarted = 0;
-
-	if(Text)
+	if(Text != NULL)
 	{
-		data_to_manager(context, Text, Pts, Duration);
+		if(hasThreadStarted)
+		{
+			data_to_manager(context, Text, Pts, Duration);
+		}
 		free(Text);
 		Text = NULL;
 	}
+
+	hasThreadStarted = 0;
 
 	sub_printf(20, "thread has ended\n");
 	return NULL;
