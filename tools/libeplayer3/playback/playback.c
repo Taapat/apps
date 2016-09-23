@@ -128,9 +128,6 @@ static int PlaybackOpen(Context_t  *context, char * uri)
 			playback_printf(1, "Extension not found, use mp3\n");
 			extension = "mp3";
 		}
-
-		if (context->container && context->container->textSubtitleContainer)
-			context->container->textSubtitleContainer->Command(context, CONTAINER_INIT, context->playback->uri+7);
 	}
 	else if (strstr(uri, "://"))
 	{
@@ -170,9 +167,6 @@ static int PlaybackClose(Context_t  *context) {
     {
         playback_err("container delete failed\n");
     }
-
-    if (context->container && context->container->textSubtitleContainer)
-        context->container->textSubtitleContainer->Command(context, CONTAINER_DEL, NULL);
 
     context->manager->audio->Command(context, MANAGER_DEL, NULL);
     context->manager->video->Command(context, MANAGER_DEL, NULL);
@@ -653,18 +647,6 @@ static int PlaybackSwitchSubtitle(Context_t  *context, int* track) {
             }
 
             context->manager->subtitle->Command(context, MANAGER_GET, &trackid);
-
-            if (trackid >= TEXTSRTOFFSET)
-            {
-                if (context->container && context->container->textSubtitleContainer)
-                     context->container->textSubtitleContainer->Command(context, CONTAINER_SWITCH_SUBTITLE, &trackid);
-            }
-            else
-            {
-                /* force a seek, to flush buffers and turn on immediately non text subtitles */
-                float pos = -10.0;
-                ret = PlaybackSeek(context, (float*)&pos, 0);
-            }
         }
         else
         {

@@ -9,7 +9,7 @@ AM_CPPFLAGS = \
 lib_LTLIBRARIES = libeplayer3.la
 
 libeplayer3_la_SOURCES =  \
-	container/container.c container/container_ffmpeg.c container/container_textsubtile.c \
+	container/container.c container/container_ffmpeg.c \
 	manager/manager.c \
 	output/output_subtitle.c output/linuxdvb.c output/output.c \
 	playback/playback.c output/writer/writer.c output/writer/aac.c output/writer/wmv.c \
@@ -18,7 +18,7 @@ libeplayer3_la_SOURCES =  \
 	output/writer/h264.c output/writer/h263.c output/writer/vc1.c \
 	output/writer/flac.c output/writer/pcm.c
 
-libeplayer3_la_LIBADD = -lpthread -lavformat -lavcodec -lavutil -lswresample -lz -lm
+libeplayer3_la_LIBADD = -lpthread -lavformat -lavcodec -lavutil -lswresample -lm
 
 bin_PROGRAMS = eplayer3 meta
 eplayer3_SOURCES = tools/eplayer2.c
