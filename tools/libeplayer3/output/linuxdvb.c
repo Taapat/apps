@@ -36,6 +36,7 @@
 #include <asm/types.h>
 #include <pthread.h>
 #include <errno.h>
+#include <poll.h>
 
 #include "common.h"
 #include "output.h"
@@ -876,8 +877,51 @@ static int Write(Context_t *context, void* _out)
         {
             linuxdvb_err("unknown video codec and no default writer %s\n",Encoding);
             ret = cERR_LINUXDVB_ERROR;
-        } else
+        }
+        else
         {
+            struct pollfd pfd[1];
+            pfd[0].fd = videofd;
+            pfd[0].events = POLLPRI;
+            int pollret = poll(pfd, 1, 0);
+            if (pollret > 0 && pfd[0].revents & POLLPRI)
+            {
+                struct video_event evt;
+                if (ioctl(videofd, VIDEO_GET_EVENT, &evt) == -1)
+                {
+                    linuxdvb_err("ioctl failed with errno %d\n", errno);
+                    linuxdvb_err("VIDEO_GET_EVENT: %s\n", strerror(errno));
+                }
+                else
+                {
+                    int msg = 0;
+                    if (evt.type == VIDEO_EVENT_SIZE_CHANGED)
+                    {
+                        linuxdvb_printf(10, "VIDEO_EVENT_SIZE_CHANGED\n");
+                        linuxdvb_printf(10, "width  : %d\n", evt.u.size.w);
+                        linuxdvb_printf(10, "height : %d\n", evt.u.size.h);
+                        msg = 2;
+                    }
+                    else if (evt.type == VIDEO_EVENT_FRAME_RATE_CHANGED)
+                    {
+                        linuxdvb_printf(10, "VIDEO_EVENT_FRAME_RATE_CHANGED\n");
+                        linuxdvb_printf(10, "framerate : %d\n", evt.u.frame_rate);
+                        msg = 3;
+                    }
+                    else if (evt.type == 16 /*VIDEO_EVENT_PROGRESSIVE_CHANGED*/)
+                    {
+                        linuxdvb_printf(10, "VIDEO_EVENT_PROGRESSIVE_CHANGED\n");
+                        linuxdvb_printf(10, "progressive : %d\n", evt.u.frame_rate);
+                        msg = 4;
+                    }
+
+                    if (msg)
+                    {
+                        context->playback->Command(context, PLAYBACK_SEND_MESSAGE, (void *) &msg);
+                    }
+                }
+            }
+
             call.fd           = videofd;
             call.data         = out->data;
             call.len          = out->len;
