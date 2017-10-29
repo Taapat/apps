@@ -656,11 +656,13 @@ int main (int argc, char* argv[])
 
 	vBoxType = getModel();
 
-	searchModel(&context, vBoxType);
+	if(!searchModel(&context, vBoxType)) {
+		printf("Selected Model: %s\n", ((Model_t*)context.m)->Name);
 
-	printf("Selected Model: %s\n", ((Model_t*)context.m)->Name);
-
-	processCommand(&context, argc, argv);
+		processCommand(&context, argc, argv);
+	}
+	else
+		printf("Warning: Model not found in available models!\n");
 
 	return 0;
 }
