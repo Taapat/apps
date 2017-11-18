@@ -13,20 +13,11 @@
 #define VFDREBOOT		0xc0425afd
 #define VFDSETLED		0xc0425afe
 #define VFDICONDISPLAYONOFF	0xc0425a0a
-#define	VFDDISPLAYCHARS 	0xc0425a00
 #define VFDBRIGHTNESS		0xc0425a03
-#define VFDPWRLED		0xc0425a04 /* added by zeroone, also used in nuvoton.h; set PowerLed Brightness on HDBOX*/
-#define VFDDISPLAYWRITEONOFF	0xc0425a05
 #define VFDDISPLAYCLR		0xc0425b00
-/* ufs912, 922, hdbox ->unset compat mode */
-#define VFDSETMODE		0xc0425aff
 /*spark*/
 #define VFDGETSTARTUPSTATE	0xc0425af8
 
-/* ufs912 */
-#define VFDGETVERSION	        0xc0425af7
-#define VFDLEDBRIGHTNESS	0xc0425af8
-#define VFDGETWAKEUPMODE	0xc0425af9
 
 struct vfd_ioctl_data {
 	unsigned char start;
@@ -36,7 +27,7 @@ struct vfd_ioctl_data {
 
 typedef enum {NONE, TIMER} eWakeupReason;
 
-typedef enum {Unknown, Ufs910_1W, Ufs910_14W, Ufs922, Tf7700, Hl101, Vip2, HdBox, Hs5101, Ufs912, Spark, Cuberevo, Adb_Box} eBoxType;
+typedef enum {Unknown, Spark} eBoxType;
 
 typedef struct Context_s {
 	void* /* Model_t */  *m; /* instance data */
@@ -54,6 +45,7 @@ typedef struct Model_s {
 	int     (* GetTime)        (Context_t* context, time_t* theGMTTime);
 	int     (* SetTimer)       (Context_t* context, time_t* theGMTTime);
 	int     (* GetTimer)       (Context_t* context, time_t* theGMTTime);
+	int     (* SetDisplayTime) (Context_t* context, int on);
 	int     (* Shutdown)       (Context_t* context, time_t* shutdownTimeGMT);
 	int     (* Reboot)         (Context_t* context, time_t* rebootTimeGMT);
 	int     (* Sleep)          (Context_t* context, time_t* wakeUpGMT);
@@ -62,43 +54,16 @@ typedef struct Model_s {
 	int     (* SetIcon)        (Context_t* context, int which, int on);
 	int     (* SetBrightness)  (Context_t* context, int brightness);
 	int     (* SetPwrLed)  	   (Context_t* context, int pwrled); /* added by zeroone; set PowerLed Brightness on HDBOX*/
-	int     (* GetWakeupReason)(Context_t* context, eWakeupReason* reason);
 	int     (* SetLight)       (Context_t* context, int on);
 	int     (* Exit)           (Context_t* context);
-	int     (* SetLedBrightness) (Context_t* context, int brightness);
-	int     (* GetVersion)       (Context_t* context, int* version);
-	int     (* SetRF)          (Context_t* context, int on);
-	int     (* SetFan)         (Context_t* context, int on);
-	int     (* GetWakeupTime)  (Context_t* context, time_t* theGMTTime);
-	int     (* SetDisplayTime) (Context_t* context, int on);
-	int     (* SetTimeMode)    (Context_t* context, int twentyFour);
+	int     (* GetWakeupReason)(Context_t* context, eWakeupReason* reason);
     void* private;
 } Model_t;
 
-extern Model_t Ufs910_1W_model;
-extern Model_t Ufs910_14W_model;
-extern Model_t UFS912_model;
-extern Model_t UFS922_model;
-extern Model_t HDBOX_model;
-extern Model_t HL101_model;
-extern Model_t VIP2_model;
-extern Model_t Hs5101_model;
 extern Model_t Spark_model;
-extern Model_t Adb_Box_model;
-extern Model_t Cuberevo_model;
 
 static Model_t * AvailableModels[] = {
-	&Ufs910_1W_model,
-	&Ufs910_14W_model,
-	&UFS922_model,
-	&HDBOX_model,
-	&HL101_model,
-	&VIP2_model,
-	&Hs5101_model,
-	&UFS912_model,
 	&Spark_model,
-	&Adb_Box_model,
-	&Cuberevo_model,
 	NULL
 };
 

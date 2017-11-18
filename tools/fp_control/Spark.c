@@ -32,7 +32,7 @@
 #include <sys/ioctl.h>
 
 #include "global.h"
-#include "Vip2.h"
+#include "Spark.h"
 
 static int Spark_setText(Context_t* context, char* theText);
 
@@ -524,10 +524,6 @@ Model_t Spark_model = {
 	.SetPwrLed		= Spark_setPwrLed,
 	.SetLight		= Spark_setLight,
 	.Exit			= Spark_Exit,
-	.SetLedBrightness	= NULL,
-	.GetVersion		= NULL,
-	.SetRF			= NULL,
-	.SetFan			= NULL,
+	.GetWakeupReason	= Spark_getWakeupReason,
 	.private		= NULL,
-	.GetWakeupReason	= Spark_getWakeupReason
 };
